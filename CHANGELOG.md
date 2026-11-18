@@ -6,6 +6,11 @@ What changed in CUI, newest first. Every component mentioned here runs live in t
 
 ### Added
 
+- **XML interfaces** ([`cui/cui_xml.h`](include/cui/cui_xml.h), [`docs/xml.md`](docs/xml.md), `examples/xmlui`, `examples/musicxml`): a window, or one panel of one, described in a file. `cui_xml_load` reads it, `cui_xml_render(doc, ui)` draws it every frame, and `cui_xml_app_desc` opens the window the document describes (title, size, theme, accent). Elements are components (`<Column>`, `<Card>`, `<Button>`, `<Slider>`, `<Table>`, `<LineChart>`, about a hundred tags), tags and attribute names are not case sensitive, and the text inside an element is its `Text`. What a control holds (a switch, a slider, a field, the selected tab) lives in the element or in a variable the app binds with `cui_xml_bind_bool/int/float/double/text`, so it survives the frame; `cui_xml_get_*` and `cui_xml_set_*` read and write it, and `{"..."}` computes an attribute from those values, the document's `<Var>`s and the element's parameters (`<Text>Count: {count}</Text>`, `Width="{wide ? 140 : 90}"`). `OnClicked`, `OnChanged`, `OnSubmitted` and `OnAction` name an action for `cui_xml_on` or `cui_xml_on_any`; `app.quit`, `theme.dark`, `theme.light`, `theme.toggle`, `accent:NAME`, `show:`, `hide:`, `toggle:`, `enable:`, `disable:`, `page:NAME=+1` and `copy:TEXT` need no C. A document declares tags of its own (`<Widget Name="Field">` with parameters and `<Children/>`), includes other files, repeats with `<Repeat>` and `<ForEach>`, and hides with `If`. A document read from a file follows it: `cui_xml_poll` reads it again when it changed and keeps what the elements hold; a file with a mistake leaves the interface as it was. `cui_xml_tag_*` and `cui_xml_attribute_info` give the tag and attribute list to a designer or a help panel, and `cui_xml_register_tag` adds a tag drawn by C. Icons are written by name (`Icon="audio-lines"`, from `tools/gen_xml_icons.py`); `Font`, `Tabular`, `LineHeight`, `Direction`, `MinWidth` and `MaxWidth` are attributes like the others, and `Fill="1"` takes a share of the free space (two elements with `Fill="1"` split it) while `Fill="fill"` takes all of it. `cui_xml_node_attr_value` reads an attribute with `{"..."}` computed and `cui_xml_draw_children` draws what an element contains, for a tag made by the application. `examples/xml_demo.xml` is the whole window of the demo, `examples/music.xml` with `examples/music_xml.c` is the music player of `examples/music.c` described in a document (the two render pixel for pixel alike; `--shot` draws both offscreen), and `tests/test_xml.c` covers reading, templates, expressions, bindings, actions, colors, tags made by C, reloading and the catalog.
+- **XML: every example, drawn the same way** (`examples/*.xml`, `examples/*_xml.c`, `examples/<name>xml`, `tests/xml_pair_shots.c`): the ten examples of `examples/` that have a window — hello, todo, caffeine, notes, settings, dashboard, assistant, mail, finance and tracker — described in a document, next to the gallery, the music player and the XML demo. Each C example gained the same `--shot out.png` the music player has, and `tests/xml_pair_shots.c` runs the two programs, compares the two PNGs byte for byte and is one `ctest` entry per pair (`xml_pair_hello` … `xml_pair_tracker`): they are identical, to the byte, for all ten. What a document cannot say stays in C, as the pairs above do it: the data (the tasks, the notes, the messages, the issues, the tracks), the painted canvases (chart, cover, card, glyphs) and the components with no tag, which those hosts register themselves (`<Notes>`, `<Orders>`, `<Answer>`, `<Messages>`, `<Txns>`, `<Issues>`, `<Level>`, …). Three tags were missing for that and are now in the library: `Readout`, `DotDisplay` and `DialogFooter`, plus a `<Radio>` inside a `<RadioGroup>` taking `Description`. The window of an XML example is driven by `cui_app_run`, like every example written in C: `cui_xml_render` in the frame callback, `cui_xml_poll` before it and `cui_app_quit(NULL)` when the document asks for it, which is what lets a backend repaint from its own paint event. Since every example now takes arguments, `tests/soak.c` calls `example_main(0, NULL)`.
+- **XML: the whole component gallery, page for page** (`examples/gallery.xml`, `examples/gallery_xml_ui.c`, `examples/galleryxml`, `tests/xml_gallery_shots.c`): the gallery of `examples/gallery_ui.c` described in one document: the sidebar with its page list, the theme switch and the accent swatches, and all nine pages — overview, buttons, inputs, selection, navigation, overlays, feedback, data display and charts. `page` (bound to the gallery's own value) picks the page drawn, so the document is the whole window; the C side keeps the state the controls hold and the actions they fire, paints the accent swatches (`<Swatch>`) and builds the ten thousand row invoice list (`<Invoices>`), the two tags made by the application. `tests/xml_gallery_shots.c` draws every page both ways with the same viewport, theme and accent, and compares the pictures byte for byte: they are identical, in both themes and with the green and blue accents, and `ctest` fails when one of them moves. `galleryxml --page 7 --shot out.png` draws one page offscreen. The tags a document was missing to say all of that are new: `ButtonGroup`, `CopyButton`, `HoldButton`, `TagInput`, `Otp`, `PasswordStrength`, `DatePicker`, `RadioCards` with `<Choice>`, `SkeletonGroup`, `StatusSpinner`, `TimelineItem`, `ProgressRing`, `AvatarGroup`, `Popover`, `ContextMenu` and `Reorder` with `<ReorderItem>`, and a `<Radio>` in a `<RadioGroup>` now takes `Description`. `popover:NAME` opens a `<Popover>` with no C; `Segmented` and `Tabs` take `Icons`, charts take `Labels` and `DonutChart` its `Format`, `Table` takes `SortColumn` and `SortDescending` (so its header shows which column the rows are ordered by), and `series1` to `series6` are color tokens. `tools/diff_regions.py` reports the bands where two pictures differ while such a pair is matched. See [Interfaces described in XML](docs/xml.md).
+- **XML: the music player, and the rest of what a document can say**: `examples/music.xml` with `examples/music_xml.c` is `examples/music.c` (a music player) with its whole layout described in a document: the sidebar, the hero, the track list, the *Made for you* grid, the transport bar and its bindings. The two render pixel for pixel alike, and `music --shot out.png` / `musicxml --shot out.png` draw both offscreen with the software renderer for that comparison. The document says `Fill="1"` for a share of the free space (two elements with it split it) and `Fill="fill"` for all of it; `Tabular`, `LineHeight`, `Font`, `Direction`, `MinWidth`, `MaxWidth` and `MinColumnWidth` are attributes like the others; icons are named (`Icon="audio-lines"`, generated from `cui_icons.h` by `tools/gen_xml_icons.py`); `cui_xml_node_attr_value` reads an attribute with `{"..."}` computed and `cui_xml_draw_children` lets a tag made by the application draw what the element contains, which is how the demo adds its `Cover`, `Eq` and `Hover` tags. Tests cover theme colors named in a document and a tag made by C.
+
 - Trace viewer links: `.links` and `.link_count` draw dependencies between spans as curves with an arrowhead, from the end of one span to the start of another and across lanes, bright when they touch the selected or hovered span. `hovered_link` in the result says which link is under the pointer, and `cui_trace_span_rect` says where a span was drawn. See [Trace viewer](docs/components-more.md#trace-viewer).
 - The dot chart and the event track take a label function (`cui_axis_label_fn`) for text a format string cannot write: month names, dates, a decimal comma. The dot chart's `.x_label` writes its x labels and the readout's x and `.value_label` the readout's value; the event track's `.label` writes its axis labels and the selected event's time. Each has a user pointer, and without one nothing changes. See [Dot-matrix chart](docs/components-more.md#dot-matrix-chart) and [Event track](docs/components-more.md#event-track) ([#28](https://github.com/yappologistic/CUI/issues/28)).
 - Window state and placement: `cui_app_minimize`, `cui_app_restore` (back from maximized or minimized), `cui_app_window_state` and `cui_app_set_position`; `cui_app_placement` reads the state and the normal size and place, also while the window is maximized, and `cui_app_desc.placement` reopens a window there, maximized if it was. See [Reopen where it was](docs/apps.md#reopen-where-it-was).
@@ -15,7 +20,7 @@ What changed in CUI, newest first. Every component mentioned here runs live in t
 - `cui_dialog` takes `.draggable` and `.resizable`: the header moves the dialog and its edges and corners resize it, inside the window and down to a minimum size; once resized, the footer stays at the bottom edge. Both are off by default, so existing dialogs do not change. See [Dialog](docs/components.md#dialog) ([#63](https://github.com/yappologistic/CUI/pull/63)).
 - `cui_set_clipboard_text` and `cui_get_clipboard_text`: copy from a menu item or a status bar ("Copy path") and read the clipboard for a Paste item, through the same platform hooks the copy button and text fields use ([#32](https://github.com/yappologistic/CUI/issues/32)).
 - `cui_app_follow_system_theme(app, follow)` starts or stops following the system's light or dark setting while the app runs, for a theme switcher with Light, Dark and System. Stopping keeps the current theme, so a `cui_set_theme` after it lasts (on macOS the system setting used to undo it every frame); starting applies the system setting at once ([#34](https://github.com/yappologistic/CUI/issues/34)).
-- **Dither**, four components drawn in dots on an 8×8 ordered dither, in theme colors, the same in the OpenGL and the software renderer. A dot is the color or nothing, never blended, so fills stay crisp and lower densities are always a subset of higher ones.
+- **Dither**, four components drawn in dots on an 8脳8 ordered dither, in theme colors, the same in the OpenGL and the software renderer. A dot is the color or nothing, never blended, so fills stay crisp and lower densities are always a subset of higher ones.
   - **Dither progress** (`cui_progress(..., .dither = true)`): solid up to the value, then dots that thin out over 60 points past the edge, drifting slowly forward; indeterminate, a soft band of dots sweeps the track. The drift asks for a frame only when it moves a dot, and reduced motion holds it still. See [Progress](docs/components.md#progress-meter-spinner-and-skeleton).
   - **Pattern meter** (`cui_pattern_meter`): a stacked usage bar whose parts differ in color and in density, with one dot between parts, free space in the track color and a legend of dithered swatches. Hovering a part or its legend entry, or stepping with Left and Right, steps the others back and shows its name, value and share. `.grayscale` tells the parts apart by density alone, for print and color blindness. See [Pattern meter](docs/components.md#pattern-meter).
   - **Dither area chart** (`cui_line_chart(..., .dither = true)`): every series filled with dots that thin out from its line to the bottom of its band; with `.stacked` (new for line charts) each band fades within itself and bands never mix into a third color. Lines, crosshair and tooltip stay as they are. See [Charts](docs/components.md#charts).
@@ -64,6 +69,7 @@ What changed in CUI, newest first. Every component mentioned here runs live in t
 
 ### Fixed
 
+- A `<Cell>` with only `Text` in a table took two columns: `cui_table_cell_text` starts the cell itself, so the document started it once more and every cell after it moved one column right (`examples/xml_demo.xml` shows its three columns where they belong).
 - The file sidebar highlights one enclosing place or volume, so Home and its drive no longer appear selected together. Double-clicks after an idle interval use the receiving frame's time, fixing missed folder opens in an event-driven app.
 - Disabled flame graphs and timeline editors ignore wheel, pointer and keyboard gestures ([#85](https://github.com/yappologistic/CUI/issues/85)).
 - Disabled node editors ignore wheel zoom and cancel in-progress gestures ([#85](https://github.com/yappologistic/CUI/issues/85)).
@@ -130,7 +136,7 @@ What changed in CUI, newest first. Every component mentioned here runs live in t
 - **An empty text field showed no caret.** At offset 0 the caret bar stands in the field's padding, left of the text, and the text's clip rectangle cut all of it away: an empty focused field looked dead and never blinked. The bar is now drawn against the field's clip, so it shows and blinks like anywhere else, with or without a placeholder (`tests/test_main.c` covers it).
 - Memory safety: a regex with a `(?: )` group wrote outside its capture array; the histogram slider read a negative bin count or NULL bins; blame read a NULL commit list; a data grid or table cell text before the first row read before the column array; long filters overflowed the kdialog and macOS file dialog commands; growing the state store could lose entries or loop on lookup; a glyph wider than the atlas was drawn past its row and the buffer; the software renderer read before empty textures and wrote past textures on overhanging updates; a reorder list that shrank under a press could move an item never dragged; the Windows file listing ran past a names buffer filled exactly; and the local time offset read unset fields for times out of range (from [#64](https://github.com/yappologistic/CUI/pull/64)).
 
-## 2026-11-11 · 1.4: instruments
+## 2026-11-11 路 1.4: instruments
 
 Five components that read like an instrument, a new example that puts them together, three guides and a reference of every function. Linux desktops can now match a window to its app, and fixes cover the single file after `windows.h` and the keyboard in three components.
 
@@ -175,7 +181,7 @@ Five components that read like an instrument, a new example that puts them toget
 - The values of an enum on a component page's "Data and results" section showed as `[object HTMLElement]` (17 pages).
 - Eight component pages said things their component does not do: the icon button's icon swap (it animates on `cui_button`, not on `cui_icon_button`), a tooltip placed after a badge, a hover card on an avatar, Tab inside the time picker and the color picker, and the keys of the onboarding checklist, comments and JSON viewer. The pages now say what the code does, and the README lists the time picker and color picker among the parts that still need a pointer.
 
-## 2026-11-09 · 1.3.1: first steps, a tutorial and ready-to-run examples
+## 2026-11-09 路 1.3.1: first steps, a tutorial and ready-to-run examples
 
 A release for people starting out. Every step of the getting-started guide was followed as written, and what did not work is fixed.
 
@@ -202,7 +208,7 @@ A release for people starting out. Every step of the getting-started guide was f
 - With the single-file distribution, the guide's first window did not compile: it needs `#include "cui.h"`, which the guide now says. The guide's one-line build also gave a 1.6 MB program; it now shows the two commands that give about 265 KB.
 - The Windows link line in the guide and in `cui.pc` lacked `comdlg32` and `ole32`.
 
-## 2026-11-09 · 1.3: developer tools
+## 2026-11-09 路 1.3: developer tools
 
 ### Added
 
@@ -235,7 +241,7 @@ A release for people starting out. Every step of the getting-started guide was f
 
 - `CUI_VERSION_STRING` said "1.1.0" in 1.2. It now matches `CUI_VERSION_MAJOR`, `MINOR` and `PATCH`, and the gallery shows the version from them.
 
-## 2026-11-09 · 1.2: phones, tablets, right to left and performance
+## 2026-11-09 路 1.2: phones, tablets, right to left and performance
 
 ### Added
 
@@ -260,7 +266,7 @@ A release for people starting out. Every step of the getting-started guide was f
 
 - **`CUI_TEXT_LEFT` is now 3** (`CUI_TEXT_START` is 0 and means left in a left-to-right box, so the default look is the same). Code that uses the names only needs a rebuild; code that stores alignments as numbers changes meaning. `cui_ctx_desc`, `cui_box` and `cui_text_opts` gained a `direction` field.
 - **Animation runs at the display's rate.** An animating window used to draw as fast as it could whenever the swap did not wait for the display: under software OpenGL or with vsync forced off by a driver, an always-animating app drew 150 frames a second on three cores, and the software renderer was capped at 120. Frames now come at the display's refresh rate (asked from the system, 60 when it cannot tell). OpenGL notices a swap that does not wait and paces by the clock, and pointer events no longer start frames early. A mixer panel on the software renderer went from 68 frames a second at 10.6% of a core to a steady 60 at 6.8%. On Windows, timed waits use a high-resolution timer, and a raw-input flag that Wine leaves set no longer wakes every wait.
-- **Dialogs, sheets and soft shadows paint about twice as fast in software.** A dialog or sheet animating over a dimmed window repaints the whole window each frame, and most of that went into its shadow and the dim layer. The inside of a shadow, where it is a flat color, is now drawn as one run; long runs of one translucent color use a per-channel table that gives the same bytes; the shadow falloff comes from a table instead of `erf` for every pixel; and the blend is inlined. The Mail example's worst frame went from 318 ms to 60 ms (one thread at 2560 × 1600), and the Assistant's sheet from 93 ms to 61 ms. Screenshots are unchanged except for 123 shadow pixels that moved by one level out of 255.
+- **Dialogs, sheets and soft shadows paint about twice as fast in software.** A dialog or sheet animating over a dimmed window repaints the whole window each frame, and most of that went into its shadow and the dim layer. The inside of a shadow, where it is a flat color, is now drawn as one run; long runs of one translucent color use a per-channel table that gives the same bytes; the shadow falloff comes from a table instead of `erf` for every pixel; and the blend is inlined. The Mail example's worst frame went from 318 ms to 60 ms (one thread at 2560 脳 1600), and the Assistant's sheet from 93 ms to 61 ms. Screenshots are unchanged except for 123 shadow pixels that moved by one level out of 255.
 - **Smaller builds.** MinGW's linker keeps whole files (it cannot drop a function with an unwind record), so release builds of CUI now also carry link-time optimization data and the examples link with `-flto=auto`: `assistant.exe` went from 740 KB to 420 KB and `hello.exe` from 418 KB to 300 KB. Apps that do not use LTO link as before. Release builds on Linux and BSD leave out unwind tables, 6 to 7% of an app (`hello` 254 KB to 242 KB); `-DCUI_KEEP_UNWIND_TABLES=ON` keeps them.
 - **Smaller Windows builds.** The core called into the emoji code to release its texture, and Windows linkers keep a whole file once anything in it is used, so every Windows app carried the emoji picker and the PNG decoder. The core now reaches emoji through a hook set when they are first used: `hello.exe` went from 478 KB to 407 KB.
 - **No GPU, no OpenGL.** When the OpenGL driver draws on the CPU (Mesa llvmpipe, SwiftShader and the like, common in virtual machines and remote sessions), X11 and Win32 apps on the Auto renderer use CUI's software renderer instead, which redraws only what changed. Notes under llvmpipe went from 27% of a core to 4%. `cui_gl_is_software` tells, and `CUI_RENDERER=opengl` keeps OpenGL.
@@ -295,7 +301,7 @@ A release for people starting out. Every step of the getting-started guide was f
 - Integration explains what a window costs in memory with each renderer, measured, and how much of it is the graphics driver rather than CUI: a bare OpenGL window takes 76 MB on its own on the test machine, CUI's own memory is 2 MB or so (issue #9).
 - Getting started lists what to install on Windows, macOS and three Linux families, builds and runs an example from a fresh checkout, explains running in the browser and where Android and iOS stand, and has a troubleshooting table for the common build and startup problems (issue #3).
 
-## 2026-11-07 · 1.1: text, code and workspace
+## 2026-11-07 路 1.1: text, code and workspace
 
 ### Added
 
@@ -321,7 +327,7 @@ A release for people starting out. Every step of the getting-started guide was f
 - The data grid's sticky header no longer disappears once the rows scroll past it.
 - A scroll area squeezed to zero width no longer produces invalid values in its edge fade.
 
-## 2026-11-06 · Tools and a new landing page
+## 2026-11-06 路 Tools and a new landing page
 
 ### Added
 
@@ -340,7 +346,7 @@ A release for people starting out. Every step of the getting-started guide was f
 - A truncated label no longer shows its tooltip through a menu, popover or dialog open above it.
 - The smallest complete app now measures about 250 KB stripped.
 
-## 2026-11-05 · A calmer design and the live docs
+## 2026-11-05 路 A calmer design and the live docs
 
 ### Changed
 
@@ -354,7 +360,7 @@ A release for people starting out. Every step of the getting-started guide was f
 - A shorter, code-first README.
 - A contributing guide with disclosure and evidence rules for people and AI agents, and issue and pull request forms.
 
-## 2026-11-05 · 1.0
+## 2026-11-05 路 1.0
 
 The first public version.
 

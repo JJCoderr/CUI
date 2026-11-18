@@ -18,6 +18,11 @@ endif()
 add_executable(cui_test_devtools test_devtools.c)
 target_link_libraries(cui_test_devtools PRIVATE cui::cui)
 add_test(NAME cui_test_devtools COMMAND cui_test_devtools)
+
+add_executable(cui_test_xml test_xml.c)
+target_link_libraries(cui_test_xml PRIVATE cui::cui)
+target_compile_definitions(cui_test_xml PRIVATE CUI_XML_TEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+add_test(NAME cui_test_xml COMMAND cui_test_xml)
 add_executable(cui_test_instrument test_instrument.c)
 target_link_libraries(cui_test_instrument PRIVATE cui::cui)
 add_test(NAME cui_test_instrument COMMAND cui_test_instrument)
@@ -40,6 +45,29 @@ add_test(NAME cui_test_dither COMMAND cui_test_dither)
 add_executable(cui_screenshots screenshots.c ../examples/gallery_ui.c ../examples/gallery_more.c)
 target_link_libraries(cui_screenshots PRIVATE cui::cui)
 add_test(NAME cui_screenshots COMMAND cui_screenshots ${CMAKE_CURRENT_BINARY_DIR})
+
+# The gallery of examples/gallery_ui.c against the same gallery described in
+# examples/gallery.xml: the two are drawn with one viewport and compared.
+add_executable(cui_xml_gallery_shots xml_gallery_shots.c ../examples/gallery_ui.c ../examples/gallery_more.c
+               ../examples/gallery_xml_ui.c)
+target_link_libraries(cui_xml_gallery_shots PRIVATE cui::cui)
+target_compile_definitions(cui_xml_gallery_shots PRIVATE
+    CUI_GALLERY_XML_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../examples/gallery.xml")
+add_test(NAME cui_xml_gallery_shots COMMAND cui_xml_gallery_shots)
+
+# An example written in C and the same example written in XML, each drawn by
+# its own program with --shot: the pictures are compared byte for byte.
+add_executable(cui_xml_pair_shots xml_pair_shots.c)
+add_test(NAME xml_pair_hello COMMAND cui_xml_pair_shots $<TARGET_FILE:hello> $<TARGET_FILE:helloxml>)
+add_test(NAME xml_pair_todo COMMAND cui_xml_pair_shots $<TARGET_FILE:todo> $<TARGET_FILE:todoxml>)
+add_test(NAME xml_pair_caffeine COMMAND cui_xml_pair_shots $<TARGET_FILE:caffeine> $<TARGET_FILE:caffeinexml>)
+add_test(NAME xml_pair_notes COMMAND cui_xml_pair_shots $<TARGET_FILE:notes> $<TARGET_FILE:notesxml>)
+add_test(NAME xml_pair_settings COMMAND cui_xml_pair_shots $<TARGET_FILE:settings> $<TARGET_FILE:settingsxml>)
+add_test(NAME xml_pair_dashboard COMMAND cui_xml_pair_shots $<TARGET_FILE:dashboard> $<TARGET_FILE:dashboardxml>)
+add_test(NAME xml_pair_assistant COMMAND cui_xml_pair_shots $<TARGET_FILE:assistant> $<TARGET_FILE:assistantxml>)
+add_test(NAME xml_pair_mail COMMAND cui_xml_pair_shots $<TARGET_FILE:mail> $<TARGET_FILE:mailxml>)
+add_test(NAME xml_pair_finance COMMAND cui_xml_pair_shots $<TARGET_FILE:finance> $<TARGET_FILE:financexml>)
+add_test(NAME xml_pair_tracker COMMAND cui_xml_pair_shots $<TARGET_FILE:tracker> $<TARGET_FILE:trackerxml>)
 
 if(CUI_WITH_APP)
     add_executable(cui_app_smoke app_smoke.c ../examples/gallery_ui.c ../examples/gallery_more.c)
