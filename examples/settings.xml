@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  examples/settings.c, described in a file.
+
+  The account is the app's data: examples/settings_xml.c keeps the same fields
+  the C example has, and the document binds them, so the profile, the switches,
+  the three choices and the open section are one thing in both programs. A
+  section is a <Card> drawn when the bound `section` names it, which is the
+  switch of the C example; the crumbs, the heading and the two lines under it
+  follow the same value, and the two buttons at the foot are disabled while
+  nothing has changed.
+
+  What a document cannot say stays in C: the name and the sentence of the open
+  section, the error under the user name, whether the delete button in the
+  dialog is enabled, the toasts, and the fact that the profile photo, the
+  theme, the accent, the text size and the reduced motion setting act on the
+  window. The seed is the same in both programs, so the two shot pictures are
+  compared byte for byte.
+-->
+<Window Title="Settings" Width="1180" Height="860" Theme="light">
+
+  <Scroll Name="page" Width="fill" Fade="true">
+    <Row Justify="center" Align="start">
+      <Column Width="fill" MaxWidth="1040" PadX="{narrow ? 16 : 40}"
+              PadTop="{narrow ? 20 : 40}" PadBottom="80" Gap="{narrow ? 20 : 28}">
+
+        <Column Gap="6">
+          <Breadcrumb If="{section == 0}" Items="Workspace|Settings|Profile"/>
+          <Breadcrumb If="{section == 1}" Items="Workspace|Settings|Notifications"/>
+          <Breadcrumb If="{section == 2}" Items="Workspace|Settings|Appearance"/>
+          <Breadcrumb If="{section == 3}" Items="Workspace|Settings|Account"/>
+          <Heading Level="1">Settings</Heading>
+        </Column>
+
+        <!-- a narrow window: the sections become tabs -->
+        <Tabs If="{narrow}" Name="sections" Items="Profile|Notifications|Appearance|Account"
+              Icons="user|bell|palette|shield" Variant="pill" Bind="section"/>
+
+        <Row Gap="40" Align="start">
+
+          <!-- the sections, on the left of a wide window -->
+          <Column If="{!narrow}" Width="220" Gap="2">
+            <NavItem Text="Profile" Icon="user" Group="sections" Selected="{section == 0}"
+                     OnClicked="section:0"/>
+            <NavItem Text="Notifications" Icon="bell" Group="sections" Selected="{section == 1}"
+                     OnClicked="section:1"/>
+            <NavItem Text="Appearance" Icon="palette" Group="sections" Selected="{section == 2}"
+                     OnClicked="section:2"/>
+            <NavItem Text="Account" Icon="shield" Group="sections" Selected="{section == 3}"
+                     OnClicked="section:3"/>
+          </Column>
+
+          <Column Width="fill" Gap="20">
+            <Column Gap="4">
+              <Heading Level="3">{sectionName}</Heading>
+              <Secondary>{sectionDesc}</Secondary>
+            </Column>
+            <!-- Profile -->
+            <Card If="{section == 0}" Gap="24">
+              <Row Gap="16">
+                <Avatar Size="64">Maya Okafor</Avatar>
+                <Column Width="fill" Gap="8">
+                  <Label>Profile photo</Label>
+                  <Row Gap="8">
+                    <Button Text="Upload" Icon="upload" Size="sm"/>
+                    <Button Text="Remove" Variant="ghost" Size="sm"/>
+                  </Row>
+                </Column>
+              </Row>
+              <Separator/>
+              <Grid Columns="2" MinColumnWidth="220" Gap="16">
+                <Input Name="first" Bind="first" Label="First name" OnChanged="edit"/>
+                <Input Name="last" Bind="last" Label="Last name" OnChanged="edit"/>
+                <Input Name="email" Bind="email" Label="Email" Icon="mail" OnChanged="edit"
+                       Hint="Used for sign in and notifications."/>
+                <Input Name="user" Bind="username" Label="Username" Icon="at-sign" OnChanged="edit"
+                       Error="{userError}"/>
+              </Grid>
+              <Input Name="web" Bind="website" Label="Website" Icon="globe" Placeholder="https://"
+                     OnChanged="edit"/>
+              <Textarea Name="bio" Bind="bio" Label="Bio" Height="100" OnChanged="edit"
+                        Hint="A few words about you. Shown on your public profile."/>
+              <Grid Columns="2" MinColumnWidth="220" Gap="16">
+                <Select Name="tz" Bind="timezone" Label="Time zone" Searchable="true" OnChanged="edit"
+                        Items="Pacific Time (UTC-8)|Eastern Time (UTC-5)|London (UTC+0)|Berlin (UTC+1)|Tehran (UTC+3:30)|Tokyo (UTC+9)"/>
+                <Select Name="lang" Bind="language" Label="Language" OnChanged="edit"
+                        Items="English|Deutsch|Espa&#241;ol|Fran&#231;ais|Italiano|Portugu&#234;s"/>
+              </Grid>
+            </Card>
+            <!-- Notifications -->
+            <Card If="{section == 1}" Gap="20">
+              <Row Align="start" Gap="24" Wrap="true" Width="fill">
+                <Column Width="fill" MinWidth="200" MaxWidth="240" Gap="3">
+                  <Label>Email</Label>
+                  <Text Size="12" Color="textSecondary">What we send to your inbox.</Text>
+                </Column>
+                <Column Gap="14" Width="fill">
+                  <Checkbox Text="Comments" Bind="emailComments" OnChanged="edit"
+                            Description="When someone replies to your comment."/>
+                  <Checkbox Text="Mentions" Bind="emailMentions" OnChanged="edit"
+                            Description="When someone mentions you."/>
+                  <Checkbox Text="Weekly digest" Bind="emailDigest" OnChanged="edit"
+                            Description="A summary of activity every Monday."/>
+                </Column>
+              </Row>
+              <Separator/>
+              <Row Align="start" Gap="24" Wrap="true" Width="fill">
+                <Column Width="fill" MinWidth="200" MaxWidth="240" Gap="3">
+                  <Label>Push</Label>
+                  <Text Size="12" Color="textSecondary">Notifications on your devices.</Text>
+                </Column>
+                <Column Gap="14" Width="fill">
+                  <Switch Text="Everything" Bind="pushAll" OnChanged="edit"/>
+                  <Switch Text="Mentions only" Bind="pushMentions" OnChanged="edit"/>
+                  <Switch Text="Desktop notifications" Bind="desktop" OnChanged="edit"
+                          Description="Show a banner even when the app is in the background."/>
+                </Column>
+              </Row>
+            </Card>
+            <!-- Appearance -->
+            <Card If="{section == 2}" Gap="20">
+              <Row Gap="24" Wrap="true" Width="fill">
+                <Column Width="fill" MinWidth="200" MaxWidth="240" Gap="3">
+                  <Label>Theme</Label>
+                  <Text Size="12" Color="textSecondary">Choose how the app looks.</Text>
+                </Column>
+                <Segmented Name="theme" Items="Light|Dark" Icons="sun|moon" Bind="theme"/>
+              </Row>
+              <Separator/>
+              <Row Gap="24" Wrap="true" Width="fill">
+                <Column Width="fill" MinWidth="200" MaxWidth="240" Gap="3">
+                  <Label>Accent</Label>
+                  <Text Size="12" Color="textSecondary">Used for selection and focus.</Text>
+                </Column>
+                <Select Name="accent" Width="200" Bind="accent"
+                        Items="Neutral|Violet|Blue|Green|Amber|Orange|Coral|Rose"/>
+              </Row>
+              <Separator/>
+              <Row Gap="24" Wrap="true" Width="fill">
+                <Column Width="fill" MinWidth="200" MaxWidth="240" Gap="3">
+                  <Label>Density</Label>
+                </Column>
+                <Segmented Name="density" Items="Comfortable|Compact" Bind="density" Size="sm"/>
+              </Row>
+              <Separator/>
+              <Row Gap="24" Wrap="true" Width="fill">
+                <Column Width="fill" MinWidth="200" MaxWidth="240" Gap="3">
+                  <Label>Text size</Label>
+                  <Text Size="12" Color="textSecondary">Scales all text in the app.</Text>
+                </Column>
+                <Slider Name="fontScale" Bind="fontScale" Min="0.85" Max="1.3" Step="0.05"
+                        ShowValue="true" Format="%.2fx"/>
+              </Row>
+              <Separator/>
+              <Row Gap="24" Wrap="true" Width="fill">
+                <Column Width="fill" MinWidth="200" MaxWidth="240" Gap="3">
+                  <Label>Reduce motion</Label>
+                  <Text Size="12" Color="textSecondary">Keep state changes, drop travel and bounce.</Text>
+                </Column>
+                <Switch Bind="reducedMotion"/>
+              </Row>
+            </Card>
+            <!-- Account -->
+            <Card If="{section == 3}" Gap="16">
+              <Label>Sessions</Label>
+              <ListItem Text="MacBook Pro, Berlin" Icon="monitor" Subtitle="This device" Trailing="Now"/>
+              <ListItem Text="Windows desktop, Tehran" Icon="monitor" Subtitle="Chrome" Trailing="2h ago"/>
+              <ListItem Text="Linux laptop, Tokyo" Icon="monitor" Subtitle="Firefox" Trailing="Yesterday"/>
+            </Card>
+            <Card If="{section == 3}" Gap="14">
+              <Row Gap="16" Wrap="true" Width="fill">
+                <Column Gap="4" Width="fill" MinWidth="220">
+                  <Text Font="medium" Color="danger">Delete account</Text>
+                  <Secondary>Permanently remove your account and all of its data. This cannot be undone.</Secondary>
+                </Column>
+                <Button Text="Delete account" Variant="danger" OnClicked="ask-delete"/>
+              </Row>
+            </Card>
+
+            <Row Gap="8" Justify="end">
+              <Button Text="Discard" Variant="ghost" Disabled="{!dirty}" OnClicked="discard"/>
+              <Button Text="Save changes" Variant="primary" Icon="check" Disabled="{!dirty}"
+                      OnClicked="save"/>
+            </Row>
+          </Column>
+        </Row>
+      </Column>
+    </Row>
+  </Scroll>
+
+  <Dialog Name="confirm" Bind="confirmDelete" Title="Delete account"
+          Description="Type DELETE to confirm. Your projects, comments and files will be removed.">
+    <Input Name="confirmText" Bind="confirmText" Placeholder="DELETE" Autofocus="true"/>
+    <Row Justify="end" Gap="8" PadTop="8">
+      <Button Text="Cancel" OnClicked="cancel-delete"/>
+      <Button Text="Delete account" Variant="danger" Disabled="{deleteDisabled}"
+              OnClicked="delete-confirmed"/>
+    </Row>
+  </Dialog>
+
+</Window>

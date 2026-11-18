@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  examples/hello.c, the smallest CUI app, described in a file.
+
+  examples/hello_xml.c binds `clicks` and lets the document follow its file;
+  tests run the two programs with the shot flag and compare the pictures.
+-->
+<Window Title="Hello" Width="420" Height="300">
+
+  <Column Pad="32" Gap="16" Width="fill">
+    <Heading Level="2">Hello, CUI</Heading>
+    <Secondary>A native window, a few components and no dependencies.</Secondary>
+    <Switch Text="Notifications" Checked="true"/>
+    <Row Gap="8">
+      <Button Text="Click me" Variant="primary" OnClicked="click"/>
+      <Text>Clicked {clicks} times</Text>
+    </Row>
+  </Column>
+</Window>

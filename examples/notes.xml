@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  examples/notes.c, described in a file.
+
+  The notes are the app's data: examples/notes_xml.c keeps the four of them the
+  way the C example does, and registers <Notes>, the rows of the list, because a
+  list that grows, is pinned and is searched cannot be written once in a
+  document. Everything about the layout, the type and the colors is here; the
+  search, the filter, the editor's two fields and the dialog are bound to the
+  app's own variables. The two programs, examples/notes.c and examples/notes_xml.c,
+  seed the same four notes; their shot output is compared byte for byte.
+
+  The phone layout, where the list and the editor take turns, stays in the C
+  example: which of the two panes is drawn is a decision of the app, and the
+  Split below is the way a document says "two panes".
+-->
+<Window Title="Notes" Width="1100" Height="720" Theme="light" Accent="amber"
+        Background="background">
+
+  <Split Name="split" Ratio="0.32" MinFirst="240" MinSecond="360">
+
+    <!-- the list -->
+    <Column Width="fill" FillV="1" Background="surfaceMuted" Pad="12" Gap="10">
+      <Row Gap="8" PadX="4" PadTop="4">
+        <Text Width="fill" Font="medium" Size="16" Nowrap="true">Notes</Text>
+        <IconButton Icon="square-pen" Tooltip="New note" Shortcut="Ctrl N" OnClicked="new"/>
+      </Row>
+      <Search Name="q" Bind="query" Placeholder="Search notes" Size="sm"/>
+      <Segmented Name="filter" Items="All|Personal|Work|Ideas" Bind="filter" Size="sm"
+                 FullWidth="true"/>
+      <Scroll Name="list" Gap="2" Fade="true">
+        <Notes/>
+      </Scroll>
+    </Column>
+
+    <!-- the open note -->
+    <Column Width="fill" FillV="1" PadX="40" PadY="28" Gap="16">
+      <Row Gap="8">
+        <Badge Text="{tagName}" Tone="{tagTone}"/>
+        <Text Width="fill" Size="12" Color="textMuted" Nowrap="true">{pinLabel}</Text>
+        <IconButton Icon="bookmark" Tooltip="{pinTooltip}" Selected="{pinned}"
+                    Color="{pinColor}" OnClicked="pin"/>
+        <Menu Text="Note actions" IconOnly="true" Icon="ellipsis" Placement="bottomend">
+          <MenuItem Text="Personal" Icon="tag" Checked="{tagIs0}" OnClicked="tag:0"/>
+          <MenuItem Text="Work" Icon="tag" Checked="{tagIs1}" OnClicked="tag:1"/>
+          <MenuItem Text="Ideas" Icon="tag" Checked="{tagIs2}" OnClicked="tag:2"/>
+          <MenuSeparator/>
+          <MenuItem Text="Export as text" Icon="download" OnClicked="export"/>
+          <MenuSeparator/>
+          <MenuItem Text="Delete note" Icon="trash-2" Danger="true" Shortcut="Del"
+                    OnClicked="delete"/>
+        </Menu>
+      </Row>
+      <Input Bind="title" Placeholder="Title" Size="lg"/>
+      <Textarea Bind="body" Placeholder="Start writing" Height="-1"/>
+      <Text>{status}</Text>
+    </Column>
+
+  </Split>
+
+  <Dialog Name="confirm" Bind="confirmDelete" Title="Delete this note?"
+          Description="The note will be removed permanently." Width="380">
+    <Row Justify="end" Gap="8" PadTop="8">
+      <Button Text="Cancel" OnClicked="cancel-delete"/>
+      <Button Text="Delete note" Variant="danger" OnClicked="delete-confirmed"/>
+    </Row>
+  </Dialog>
+
+</Window>

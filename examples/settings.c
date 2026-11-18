@@ -1,10 +1,17 @@
 /* Account settings: section navigation, forms, preferences and a danger zone.
  * On a narrow window the sections become tabs and each setting's label sits
- * above its control. */
+ * above its control.
+ *
+ *     settings                    opens the window
+ *     settings --shot out.png     draws it offscreen with the software renderer,
+ *                                 which is how examples/settings_xml.c (the same
+ *                                 window in XML) is compared with it */
 #include <cui/cui.h>
 #include <cui/cui_app.h>
+#include <cui/cui_render.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct {
@@ -190,17 +197,65 @@ static void frame(cui_ctx *ui, void *user) {
     }
 }
 
-int main(void) {
+/* The account `settings --shot` draws, and the one the app opens with: the
+ * profile filled in, Berlin time, two kinds of mail and the mention push on,
+ * text at its normal size, nothing unsaved. examples/settings_xml.c starts from
+ * the same values. */
+static void seed(settings *s) {
+    memset(s, 0, sizeof *s);
+    snprintf(s->first, sizeof s->first, "Maya");
+    snprintf(s->last, sizeof s->last, "Okafor");
+    snprintf(s->email, sizeof s->email, "maya@fieldwork.studio");
+    snprintf(s->username, sizeof s->username, "maya.okafor");
+    snprintf(s->website, sizeof s->website, "https://fieldwork.studio");
+    snprintf(s->bio, sizeof s->bio, "Product designer in Berlin. Currently on onboarding and the settings pages.");
+    s->timezone = 3;
+    s->email_comments = s->email_mentions = true;
+    s->push_mentions = true;
+    s->font_scale = 1.0f;
+}
+
+/* `settings --shot out.png`: the same window drawn offscreen with the software
+ * renderer, for a machine without one -- and to compare with
+ * examples/settings_xml.c, the same window described in XML. It reads nothing:
+ * the account comes from seed. */
+static int write_shot(const char *out_path) {
     static settings s;
-    snprintf(s.first, sizeof s.first, "Maya");
-    snprintf(s.last, sizeof s.last, "Okafor");
-    snprintf(s.email, sizeof s.email, "maya@fieldwork.studio");
-    snprintf(s.username, sizeof s.username, "maya.okafor");
-    snprintf(s.website, sizeof s.website, "https://fieldwork.studio");
-    snprintf(s.bio, sizeof s.bio, "Product designer in Berlin. Currently on onboarding and the settings pages.");
-    s.timezone = 3;
-    s.email_comments = s.email_mentions = true;
-    s.push_mentions = true;
-    s.font_scale = 1.0f;
+    cui_sw_renderer *sw = cui_sw_create();
+    cui_ctx *ui;
+    const cui_draw_data *draw;
+    unsigned char *pixels;
+    int i;
+    if (!sw) return 1;
+    seed(&s);
+    ui = cui_create(&(cui_ctx_desc){ .renderer = cui_sw_iface(sw), .theme = CUI_THEME_LIGHT });
+    if (!ui) {
+        cui_sw_destroy(sw);
+        return 1;
+    }
+    cui_set_viewport(ui, 1180, 860, 1);
+    cui_input_mouse_leave(ui);
+    for (i = 0; i < 6; i++) {
+        cui_begin_frame(ui, 1.0f / 60.0f);
+        frame(ui, &s);
+        cui_end_frame(ui);
+    }
+    draw = cui_get_draw_data(ui);
+    pixels = malloc((size_t)draw->width_px * (size_t)draw->height_px * 4u);
+    if (pixels) {
+        cui_sw_render(sw, draw, pixels, draw->width_px, draw->height_px, draw->width_px * 4, CUI_SW_RGBA);
+        cui_write_png(out_path, pixels, draw->width_px, draw->height_px, draw->width_px * 4);
+        printf("%s: %d x %d\n", out_path, draw->width_px, draw->height_px);
+        free(pixels);
+    }
+    cui_destroy(ui);
+    cui_sw_destroy(sw);
+    return pixels ? 0 : 1;
+}
+
+int main(int argc, char **argv) {
+    static settings s;
+    if (argc > 2 && !strcmp(argv[1], "--shot")) return write_shot(argv[2]);
+    seed(&s);
     return cui_app_run(&(cui_app_desc){ .title = "Settings", .width = 1180, .height = 860 }, frame, &s);
 }

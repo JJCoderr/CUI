@@ -659,5 +659,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--deep")) opt_sites = opt_deep = true;
         else if (!strcmp(argv[i], "--csv") && i + 1 < argc) opt_csv = argv[++i];
     }
-    return example_main();
+    /* the examples take the shot arguments every one of them now has; the soak
+     * runs them the way a plain start does */
+    return example_main(0, NULL);
 }

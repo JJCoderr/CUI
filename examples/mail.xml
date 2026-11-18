@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  examples/mail.c, described in a file.
+
+  The inbox is the app's data: examples/mail_xml.c keeps the six messages with
+  their sender, subject, preview, time, body and label, the four folders, the
+  three labels, the search, the open message and the compose fields, and it
+  says which pane a window's width asks for. Everything about the window, the
+  two splits, the folders, the list's header, the reading pane's toolbar, the
+  reader and the dialog is here. The rows of the list are <Messages>, a tag
+  registered in examples/mail_xml.c: which rows there are, what they say and
+  which one is open is the app's data, and a row is a canvas painted behind
+  its text. <Drawer> is the sheet a narrow window opens the folders in.
+
+  The folders, the list and the reader are written once as <Widget>s because
+  the three layouts use them: three panes, two panes, and one pane at a time
+  on a phone. The two programs seed the same inbox, so their shot output is
+  compared byte for byte.
+-->
+<Window Title="Mail" Width="1280" Height="800" Accent="blue" Background="background">
+
+  <!-- the folders: the left pane, and the sheet a narrow window opens -->
+  <Widget Name="Folders" PanePad="12" PaneBackground="surfaceMuted">
+    <Column Width="fill" Height="fill" Background="{PaneBackground}" Pad="{PanePad}"
+            Gap="2">
+
+      <Row PadX="6" PadBottom="12" Gap="10">
+        <Avatar Text="Maya Okafor" Size="28"/>
+        <Column Gap="0" Width="fill">
+          <Text Font="medium" Nowrap="true">Maya Okafor</Text>
+          <Text Size="12" Color="textSecondary" Nowrap="true">maya@fieldwork.studio</Text>
+        </Column>
+      </Row>
+
+      <Button Text="Compose" Variant="primary" Icon="square-pen" FullWidth="true"
+              OnClicked="compose"/>
+      <Gap Size="10"/>
+      <NavItem Text="Inbox" Icon="inbox" Selected="{folder == 0}" Badge="{inboxBadge}"
+               OnClicked="folder:0"/>
+      <NavItem Text="Starred" Icon="star" Selected="{folder == 1}" OnClicked="folder:1"/>
+      <NavItem Text="Sent" Icon="send" Selected="{folder == 2}" OnClicked="folder:2"/>
+      <NavItem Text="Archive" Icon="archive" Selected="{folder == 3}"
+               OnClicked="folder:3"/>
+
+      <Spacer/>
+
+      <NavSection Text="Labels"/>
+      <Row Gap="10" PadX="10" PadY="6"><Badge Text="Work" Tone="info"/></Row>
+      <Row Gap="10" PadX="10" PadY="6"><Badge Text="Personal" Tone="violet"/></Row>
+      <Row Gap="10" PadX="10" PadY="6"><Badge Text="Urgent" Tone="warning"/></Row>
+
+    </Column>
+  </Widget>
+
+  <!-- the list: its header, the search and the rows <Messages> draws -->
+  <Widget Name="List">
+    <Column Width="fill" Height="fill" Gap="10" Pad="12">
+
+      <Row PadX="4" PadTop="4" Gap="6" Width="fill">
+        <IconButton If="{narrow}" Icon="menu" Tooltip="Folders" OnClicked="drawer"/>
+        <Box Width="fill"><Heading Level="4">{folderName}</Heading></Box>
+        <IconButton If="{narrow}" Icon="square-pen" Tooltip="Compose"
+                    OnClicked="compose"/>
+      </Row>
+
+      <Search Name="query" Bind="query" Placeholder="Search mail" Size="sm"/>
+
+      <Scroll Name="list" Gap="0" Fade="true">
+        <Messages/>
+      </Scroll>
+
+    </Column>
+  </Widget>
+
+  <!-- the reading pane: its toolbar, then the open message -->
+  <Widget Name="Reader">
+    <Column Width="fill" Height="fill">
+
+      <Column If="{none}" Width="fill" Height="fill" Justify="center">
+        <EmptyState Text="No message selected" Icon="mail"
+                    Description="Choose a message to read it here."/>
+      </Column>
+
+      <Row If="{has}" Gap="4" PadX="{panes == 1 ? 12 : 20}" PadY="10">
+        <IconButton If="{panes == 1}" Icon="chevron-left" Tooltip="Back to the list"
+                    OnClicked="reading-off"/>
+        <IconButton Icon="archive" Tooltip="Archive" Shortcut="E" OnClicked="archive"/>
+        <IconButton Icon="trash-2" Tooltip="Delete"/>
+        <IconButton Icon="star" Tooltip="{starTooltip}" Selected="{starred}"
+                    Color="{starColor}" OnClicked="star"/>
+        <Spacer/>
+        <Button Text="Reply" Icon="undo-2" Size="sm" OnClicked="reply"/>
+      </Row>
+
+      <Separator If="{has}"/>
+
+      <Scroll If="{has}" Name="reader" Pad="{panes == 1 ? 16 : 28}" Gap="18"
+              Fade="true">
+        <Heading Level="3">{subjectText}</Heading>
+        <Row Gap="12">
+          <Avatar Text="{sender}" Size="36"/>
+          <Column Gap="1" Width="fill">
+            <Text Font="medium" Nowrap="true">{sender}</Text>
+            <Text Size="12" Color="textSecondary" Nowrap="true">{senderEmail}</Text>
+          </Column>
+          <Badge If="{hasLabel}" Text="{labelText}" Tone="{labelTone}"/>
+          <Text Size="12" Color="textMuted" Nowrap="true">{timeText}</Text>
+        </Row>
+        <Text LineHeight="1.6">{bodyText}</Text>
+      </Scroll>
+
+    </Column>
+  </Widget>
+
+  <!-- three panes: the folders, then the list and the reader -->
+  <Split If="{three}" Name="outer" Ratio="0.2" MinFirst="200" MinSecond="600">
+    <Folders/>
+    <Split Name="inner" Ratio="0.38" MinFirst="280" MinSecond="320">
+      <List/>
+      <Reader/>
+    </Split>
+  </Split>
+
+  <!-- two panes: the folders go in the drawer -->
+  <Split If="{two}" Name="inner" Ratio="0.38" MinFirst="260" MinSecond="320">
+    <List/>
+    <Reader/>
+  </Split>
+
+  <!-- one pane: the list and the open message take turns -->
+  <Reader If="{oneReader}"/>
+  <List If="{oneList}"/>
+
+  <Drawer Text="Mail" Side="left" Size="280">
+    <Folders PanePad="0" PaneBackground="transparent"/>
+  </Drawer>
+
+  <Dialog Name="compose" Bind="compose" Title="New message" Width="560">
+    <Input Name="to" Label="To" Icon="at-sign" Autofocus="true"/>
+    <Input Name="subject" Label="Subject"/>
+    <Textarea Name="body" Height="180" Placeholder="Write your message"/>
+    <DialogFooter>
+      <Button Text="Discard" Variant="ghost" OnClicked="discard"/>
+      <Button Text="Send" Variant="primary" Icon="send" Disabled="{empty(to)}"
+              OnClicked="send"/>
+    </DialogFooter>
+  </Dialog>
+
+</Window>

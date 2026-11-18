@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  examples/dashboard.c, described in a file.
+
+  The sidebar, the top bar, the four figures, the two charts and the table are
+  the same calls in the same order, so the two programs draw one picture. What a
+  document cannot hold stays in examples/dashboard_xml.c: the orders the table
+  shows (and the search that filters them), the figures of the chosen range with
+  the sentences under them, the command palette, and the drawer's own state.
+
+  The pieces a document has no tag of its own for are registered there:
+  <Orders>, the table with the app's rows, and <NumberRoll>, the figures of the
+  four measures, which roll when the range changes; a narrow window's drawer is
+  <Drawer>, the sheet the C example opens over the window.
+
+  A Card has no MinWidth in a document, so the two chart cards only carry their
+  share of the row: at the width dashboard.c opens with neither minimum is
+  reached, and the two pictures are the same. `narrow`, `two` and `dark` are the
+  window's three facts, worked out in C every frame.
+-->
+<Window Title="Larkspur Dashboard" Width="1360" Height="900" Theme="light" Accent="blue">
+
+  <Shortcut Keys="Ctrl+K" Action="palette"/>
+
+  <Row Width="fill" Height="fill" Align="stretch" Background="background">
+
+    <!-- the sidebar: the brand, the six pages, the next payout -->
+    <Column If="{!narrow}" Width="232" Height="fill" Background="surfaceMuted" Pad="12" Gap="2">
+      <Row Gap="10" PadX="8" PadTop="6" PadBottom="16">
+        <Stack Width="26" Height="26" Radius="7" Background="foreground" Align="center"
+               Justify="center">
+          <Text Font="display" Size="14" Color="background">L</Text>
+        </Stack>
+        <Text Font="medium" Size="15" Nowrap="true">Larkspur Supply</Text>
+      </Row>
+
+      <NavItem Text="Overview" Icon="layout-dashboard" Selected="{nav == 0}" OnClicked="nav:0"/>
+      <NavItem Text="Orders" Icon="shopping-cart" Selected="{nav == 1}" Badge="12"
+               OnClicked="nav:1"/>
+      <NavItem Text="Customers" Icon="users" Selected="{nav == 2}" OnClicked="nav:2"/>
+      <NavItem Text="Products" Icon="package" Selected="{nav == 3}" OnClicked="nav:3"/>
+      <NavItem Text="Analytics" Icon="chart-bar" Selected="{nav == 4}" OnClicked="nav:4"/>
+      <NavItem Text="Settings" Icon="settings" Selected="{nav == 5}" OnClicked="nav:5"/>
+
+      <Spacer/>
+      <Card Pad="16" Gap="10">
+        <Text Size="12" Color="textSecondary">Next payout</Text>
+        <Text Font="display" Size="20" Tabular="true">$4,812.30</Text>
+        <Text Size="12" Color="textSecondary">To the account ending 4417 on Nov 8.</Text>
+      </Card>
+    </Column>
+    <Separator If="{!narrow}"/>
+
+    <Column Width="fill">
+
+      <!-- the top bar: the search, the theme, the bell, the account -->
+      <Row Gap="{narrow ? 8 : 12}" PadX="{narrow ? 12 : 32}" PadY="14" Width="fill">
+        <IconButton If="{narrow}" Icon="menu" Tooltip="Menu" OnClicked="drawer"/>
+        <Box Width="4*" MaxWidth="320">
+          <Search Name="search" Bind="search" Placeholder="Search orders, customers"/>
+        </Box>
+        <Spacer/>
+        <IconButton Icon="{dark ? 'sun' : 'moon'}" Tooltip="Toggle theme"
+                    OnClicked="toggle-theme"/>
+        <IconButton Icon="bell" Tooltip="Notifications"/>
+        <Menu Text="Account" Icon="circle-user" Variant="ghost" Placement="bottomend">
+          <MenuLabel>nora@larkspur.co</MenuLabel>
+          <MenuItem Text="Profile" Icon="user"/>
+          <MenuItem Text="Billing" Icon="credit-card"/>
+          <MenuItem Text="Keyboard shortcuts" Icon="keyboard" Shortcut="?"/>
+          <MenuSeparator/>
+          <MenuItem Text="Log out" Icon="log-out"/>
+        </Menu>
+      </Row>
+      <Separator/>
+
+      <Scroll Name="content" Pad="{narrow ? 16 : 32}" Gap="{narrow ? 16 : 24}" Fade="true">
+
+        <!-- the title, the range and the export -->
+        <Row Gap="12" Wrap="true" Width="fill">
+          <Column Gap="4" Width="fill" MinWidth="220">
+            <Heading Level="2">Overview</Heading>
+            <Secondary>November 1 to 30, all channels</Secondary>
+          </Column>
+          <Segmented Name="range" Items="7 days|30 days|12 months" Bind="range" Size="sm"/>
+          <Button Text="Export" Icon="download" Size="sm"/>
+        </Row>
+
+        <!-- one strip of figures rather than four look-alike cards; the chart
+             below carries the trend, and without room for four across, two per
+             line and no hairlines -->
+        <Card Dir="row" Gap="0" Pad="0">
+          <Box Direction="{two ? 'grid' : 'row'}" Columns="2" Width="fill"
+               Gap="{two ? 20 : 0}" PadY="{two ? 4 : 0}">
+            <Column Width="1*" PadX="22" Gap="6">
+              <Text Size="13" Color="textSecondary">Revenue</Text>
+              <NumberRoll Label="Revenue" Value="{revenue}" Font="display" Size="26"/>
+              <Text Size="12" Color="success">{change1}</Text>
+            </Column>
+            <Separator If="{!two}"/>
+            <Column Width="1*" PadX="22" Gap="6">
+              <Text Size="13" Color="textSecondary">Orders</Text>
+              <NumberRoll Label="Orders" Value="{orders}" Font="display" Size="26"/>
+              <Text Size="12" Color="success">{change2}</Text>
+            </Column>
+            <Separator If="{!two}"/>
+            <Column Width="1*" PadX="22" Gap="6">
+              <Text Size="13" Color="textSecondary">Conversion</Text>
+              <NumberRoll Label="Conversion" Value="{conversion}" Font="display" Size="26"/>
+              <Text Size="12" Color="success">{conversionChange}</Text>
+            </Column>
+            <Separator If="{!two}"/>
+            <Column Width="1*" PadX="22" Gap="6">
+              <Text Size="13" Color="textSecondary">Refund rate</Text>
+              <NumberRoll Label="Refund rate" Value="{refunds}" Font="display" Size="26"/>
+              <Text Size="12" Color="success">{refundChange}</Text>
+            </Column>
+          </Box>
+        </Card>
+
+        <!-- the revenue chart beside where the orders come from -->
+        <Row Gap="16" Align="stretch" Wrap="true" Width="fill">
+          <Card Gap="16" Width="2*">
+            <Row>
+              <Column Gap="2" Width="fill">
+                <Label>Revenue</Label>
+                <Text Size="12" Color="textSecondary">Compared with last year</Text>
+              </Column>
+              <Badge Text="+18%" Tone="success" Icon="trending-up"/>
+            </Row>
+            <LineChart Name="rev" Area="true" Smooth="true" Height="230" Format="$%.0fk"
+                       Labels="Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec">
+              <Series Text="This year" Values="31,34,33,38,42,40,46,52,49,55,61,64"/>
+              <Series Text="Last year" Values="24,26,27,29,31,30,34,36,35,39,41,44"/>
+            </LineChart>
+          </Card>
+          <Card Gap="16" Width="1*">
+            <Column Gap="2">
+              <Label>Where orders come from</Label>
+              <Text Size="12" Color="textSecondary">Share of November orders</Text>
+            </Column>
+            <Column Width="fill" Height="fill" Justify="center">
+              <DonutChart Name="src" Height="170" Format="%.0f%%">
+                <Slice Text="Search" Value="42"/>
+                <Slice Text="Direct" Value="26"/>
+                <Slice Text="Social" Value="18"/>
+                <Slice Text="Email" Value="14"/>
+              </DonutChart>
+            </Column>
+          </Card>
+        </Row>
+
+        <!-- the orders, and what the page holds -->
+        <Card Gap="14">
+          <Row>
+            <Column Gap="2" Width="fill">
+              <Label>Recent orders</Label>
+              <Text Size="12" Color="textSecondary">Newest first</Text>
+            </Column>
+            <Button Text="View all" Variant="ghost" IconRight="arrow-right" Size="sm"/>
+          </Row>
+          <Orders/>
+          <Row Wrap="true" Gap="8" Width="fill">
+            <Box Width="fill" MinWidth="200">
+              <Text Size="12" Color="textSecondary">Showing 1 to 6 of 1,286 orders</Text>
+            </Box>
+            <Pagination Name="pages" Bind="page" PageCount="215"/>
+          </Row>
+        </Card>
+
+      </Scroll>
+    </Column>
+  </Row>
+
+  <!-- the same six pages, over the window on a narrow one -->
+  <Drawer Text="Larkspur Supply" Side="left" Size="280">
+    <NavItem Text="Overview" Icon="layout-dashboard" Selected="{nav == 0}" OnClicked="nav:0"/>
+    <NavItem Text="Orders" Icon="shopping-cart" Selected="{nav == 1}" Badge="12"
+             OnClicked="nav:1"/>
+    <NavItem Text="Customers" Icon="users" Selected="{nav == 2}" OnClicked="nav:2"/>
+    <NavItem Text="Products" Icon="package" Selected="{nav == 3}" OnClicked="nav:3"/>
+    <NavItem Text="Analytics" Icon="chart-bar" Selected="{nav == 4}" OnClicked="nav:4"/>
+    <NavItem Text="Settings" Icon="settings" Selected="{nav == 5}" OnClicked="nav:5"/>
+  </Drawer>
+
+</Window>

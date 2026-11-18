@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  examples/finance.c, described in a file.
+
+  The figures are the app's data, as in the C example: the six transactions
+  with their merchant, category, icon, tone and amount are <Txns>, the rows of
+  the table, and examples/finance_xml.c keeps them and formats them the way the
+  C example does. That file also holds what else a document cannot say:
+  <CardArt>, the painted payment card, because a canvas is app paint, and the
+  command palette, which is drawn after the document because its commands are
+  the app's data too.
+
+  Everything about the window, the top bar, the three rows of cards, the two
+  charts, the four budgets, the three goals and the card panel is here. A
+  budget is <BudgetRow> and a goal is <Goal>: the two rows that repeat, with the
+  numbers the model holds. The bar follows one rule for all four, written where
+  it is drawn: over the total is red, the last tenth is amber, the rest is
+  plain.
+
+  `narrow` is the one fact of the window's width, worked out in C every frame:
+  under 900 points the tabs get a line of their own.
+
+  The two programs seed the same overview, so their shot output is compared
+  byte for byte.
+-->
+<Window Title="Halden" Width="1440" Height="940" Theme="dark" Accent="green"
+        Background="background">
+
+  <Shortcut Keys="Ctrl+K" Action="palette"/>
+
+  <!-- a card's heading: its name, and the sentence under it -->
+  <Widget Name="CardTitle" Label="Title" Note="">
+    <Column Gap="2" Width="fill">
+      <Label>{Label}</Label>
+      <Text Size="12" Color="textSecondary">{Note}</Text>
+    </Column>
+  </Widget>
+
+  <!-- one budget: what it is called, what is spent, and the bar under it -->
+  <Widget Name="BudgetRow" Label="Budget" Icon="shopping-cart" Amount="" Used="0"
+          Total="100">
+    <Column Gap="8" Width="fill">
+      <Row Width="fill" Gap="8" Align="center">
+        <Icon Icon="{Icon}" Size="14" Color="textSecondary"/>
+        <Text Size="13" Width="fill" Nowrap="true">{Label}</Text>
+        <Text Size="12" Tabular="true"
+              Color="{Used &gt; Total ? 'danger' : 'textSecondary'}">{Amount}</Text>
+      </Row>
+      <Progress Height="6"
+                Value="{Used / Total &gt; 1 ? 1 : Used / Total}"
+                Tone="{Used / Total &gt; 1 ? 'danger' : Used / Total &gt;= 0.9 ? 'warning' : 'neutral'}"/>
+    </Column>
+  </Widget>
+
+  <!-- one savings goal: the ring, its name and how far along it is -->
+  <Widget Name="Goal" Title="Goal" Value="0" Amount="">
+    <Column Gap="8" Align="center">
+      <ProgressRing Value="{Value}" Size="72"/>
+      <Text Font="medium" Size="13">{Title}</Text>
+      <Text Size="11" Color="textMuted">{Amount}</Text>
+    </Column>
+  </Widget>
+
+  <!-- the top bar: the brand, the tabs, the search, the bell, the account -->
+  <Row Width="fill" PadX="{narrow ? 16 : 32}" PadTop="14" Gap="{narrow ? 12 : 28}"
+       Align="center">
+    <Row Gap="10" Align="center">
+      <Stack Width="26" Height="26" Radius="13" Background="accent" Align="center"
+             Justify="center">
+        <Text Font="display" Size="15" Color="accentForeground">h</Text>
+      </Stack>
+      <Text Font="display" Size="17">Halden</Text>
+    </Row>
+    <Tabs If="{!narrow}" Name="nav" Items="Overview|Accounts|Payments|Cards|Insights"
+          Bind="nav"/>
+    <Spacer/>
+    <Box Width="4*" MaxWidth="220">
+      <Search Name="search" Bind="search" Placeholder="Search"/>
+    </Box>
+    <IconButton Icon="bell" Tooltip="Notifications"/>
+    <Avatar Text="Mara Quinn" Size="32" Status="online"/>
+  </Row>
+
+  <!-- a phone gives the tabs a line of their own -->
+  <Row If="{narrow}" Width="fill" PadX="16" PadTop="6">
+    <Tabs Name="navPhone" Items="Overview|Accounts|Payments|Cards|Insights" Bind="nav"/>
+  </Row>
+
+  <Separator/>
+
+  <Scroll Name="main" Pad="{narrow ? 16 : 32}" Gap="{narrow ? 16 : 20}" Fade="true">
+
+    <!-- the page, and the two things to do with it -->
+    <Row Width="fill" Align="end" Wrap="true" Gap="12">
+      <Column Gap="4" Width="fill" MinWidth="240">
+        <Text Font="display" Size="28">Overview</Text>
+        <Text Color="textSecondary">Four accounts, synced at 6:42 pm</Text>
+      </Column>
+      <Row Gap="8">
+        <Button Text="Statements" Icon="file-text" Variant="outline"/>
+        <Button Text="Move money" Icon="send" Variant="primary"/>
+      </Row>
+    </Row>
+
+    <!-- the balance over the year, beside the cards the money is on -->
+    <Row Width="fill" Gap="{narrow ? 16 : 20}" Align="stretch" Wrap="true">
+      <Card Gap="18" Width="2*">
+        <Row Width="fill" Align="start" Wrap="true" Gap="12">
+          <Column Gap="6" Width="fill" MinWidth="240">
+            <Text Size="13" Color="textSecondary">Total balance</Text>
+            <Row Gap="12" Align="center">
+              <Text Font="display" Size="38" Tabular="true">$48,250.32</Text>
+              <Badge Text="+6.9%" Tone="success" Icon="trending-up"/>
+            </Row>
+            <Text Size="13" Color="textMuted">+$3,104 since last month across 4 accounts</Text>
+          </Column>
+          <Segmented Name="range" Items="1M|6M|1Y|All" Bind="range" Size="sm"/>
+        </Row>
+        <LineChart Name="balance" Area="true" Smooth="true" Height="236" NoLegend="true"
+                   Format="$%.0fk"
+                   Labels="Dec|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov">
+          <Series Text="Balance"
+                  Values="31.2,32.8,32.1,34.6,36.0,35.2,38.4,40.1,39.3,42.8,45.1,48.2"/>
+        </LineChart>
+      </Card>
+
+      <Card Gap="18" Width="1*">
+        <Row Width="fill" Align="center">
+          <Label>My cards</Label>
+          <Spacer/>
+          <Button Text="Add" Icon="plus" Size="sm" Variant="ghost"/>
+        </Row>
+        <CardArt/>
+        <Box Direction="grid" Columns="3" Gap="10" Width="fill">
+          <Button Text="Send" Icon="arrow-up-right" FullWidth="true"/>
+          <Button Text="Request" Icon="arrow-down" FullWidth="true"/>
+          <Button Text="Top up" Icon="plus" FullWidth="true"/>
+        </Box>
+        <Row Width="fill" Gap="12" Align="center">
+          <Column Gap="2" Width="fill">
+            <Text Font="medium" Size="13">Freeze card</Text>
+            <Text Size="12" Color="textMuted">Block new payments instantly</Text>
+          </Column>
+          <Switch Name="freeze" Bind="frozen"/>
+        </Row>
+      </Card>
+    </Row>
+
+    <!-- where November went, what is left to spend, and what is being saved -->
+    <Row Width="fill" Gap="{narrow ? 16 : 20}" Align="stretch" Wrap="true">
+      <Card Gap="20" Width="1*">
+        <Row Width="fill" Align="center">
+          <CardTitle Label="Spending" Note="November, by category"/>
+          <Menu Text="Options" Icon="ellipsis" IconOnly="true" Variant="ghost"
+                Placement="bottomend">
+            <MenuItem Text="Export CSV" Icon="download"/>
+            <MenuItem Text="Edit categories" Icon="tag"/>
+          </Menu>
+        </Row>
+        <DonutChart Name="spend" Height="150" Format="$%.0f">
+          <Slice Text="Housing" Value="1850"/>
+          <Slice Text="Groceries" Value="640"/>
+          <Slice Text="Dining" Value="420"/>
+          <Slice Text="Other" Value="310"/>
+        </DonutChart>
+      </Card>
+
+      <Card Gap="16" Width="1*">
+        <Row Width="fill" Align="center">
+          <CardTitle Label="Budgets" Note="12 days left this month"/>
+          <Button Text="Edit" Size="sm" Variant="ghost"/>
+        </Row>
+        <BudgetRow Label="Groceries" Icon="shopping-cart" Amount="$640 / $800"
+                   Used="640" Total="800"/>
+        <BudgetRow Label="Dining out" Icon="gift" Amount="$420 / $400"
+                   Used="420" Total="400"/>
+        <BudgetRow Label="Transport" Icon="map-pin" Amount="$96 / $250"
+                   Used="96" Total="250"/>
+        <BudgetRow Label="Entertainment" Icon="music" Amount="$186 / $200"
+                   Used="186" Total="200"/>
+      </Card>
+
+      <Card Gap="18" Width="1*">
+        <Row Width="fill" Align="center">
+          <CardTitle Label="Savings goals" Note="On track for 2 of 3"/>
+          <IconButton Icon="plus" Size="sm" Tooltip="New goal"/>
+        </Row>
+        <Row Width="fill" Justify="between">
+          <Goal Title="Japan trip" Value="0.81" Amount="$3,240 of $4,000"/>
+          <Goal Title="New laptop" Value="0.46" Amount="$1,100 of $2,400"/>
+          <Goal Title="Emergency" Value="0.98" Amount="$9,800 of $10k"/>
+        </Row>
+      </Card>
+    </Row>
+
+    <!-- everything that moved, newest first -->
+    <Row Width="fill" Gap="20" Align="stretch">
+      <Card Gap="6" Width="2*">
+        <Row Width="fill" PadBottom="8" Align="center">
+          <CardTitle Label="Recent transactions" Note="Across all accounts"/>
+          <Button Text="View all" Variant="ghost" Size="sm" IconRight="arrow-right"/>
+        </Row>
+        <Txns/>
+      </Card>
+    </Row>
+
+  </Scroll>
+
+</Window>

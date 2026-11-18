@@ -1,11 +1,19 @@
 /* Personal finance: top navigation, a balance chart, a painted payment card,
  * budgets, savings goals and recent transactions. Dark by default. The cards
  * wrap onto new lines as the window narrows; on a phone the tabs get a line
- * of their own. */
+ * of their own.
+ *
+ *     finance                   opens the window
+ *     finance --shot out.png    draws it offscreen, software renderer
+ *
+ * The shot draws the overview seeded below, so it can be compared byte for byte
+ * with examples/finance_xml.c, the same window described in examples/finance.xml. */
 #include <cui/cui.h>
 #include <cui/cui_app.h>
+#include <cui/cui_render.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct {
@@ -294,8 +302,59 @@ static void frame(cui_ctx *ui, void *user) {
     else if (c >= 0) cui_toast(ui, cmds[c].title, .tone = CUI_TONE_SUCCESS);
 }
 
-int main(void) {
-    static app_state s = { .range = 2 };
+/* The overview `finance --shot` draws, and the one the app opens with: the
+ * third range chosen, the first tab, the card unfrozen, an empty search.
+ * examples/finance_xml.c seeds the same values. */
+static void seed(app_state *s) {
+    memset(s, 0, sizeof *s);
+    s->range = 2;
+}
+
+/* `finance --shot out.png`: the same window drawn offscreen with the software
+ * renderer, with the viewport, the theme, the accent and the six frames of the
+ * app, so the two pictures can be compared. It reads nothing: the figures come
+ * from the tables above and seed, and nothing on the shot's screen has been
+ * touched, so every value of the frame is the one the app computes on its first
+ * idle frame. */
+static int write_shot(const char *out_path) {
+    static app_state s;
+    cui_sw_renderer *sw = cui_sw_create();
+    cui_ctx *ui;
+    const cui_draw_data *draw;
+    unsigned char *pixels;
+    int i;
+    if (!sw) return 1;
+    seed(&s);
+    ui = cui_create(&(cui_ctx_desc){ .renderer = cui_sw_iface(sw), .theme = CUI_THEME_DARK,
+                                     .accent = CUI_ACCENT_GREEN });
+    if (!ui) {
+        cui_sw_destroy(sw);
+        return 1;
+    }
+    cui_set_viewport(ui, 1440, 940, 1);
+    cui_input_mouse_leave(ui);
+    for (i = 0; i < 6; i++) {
+        cui_begin_frame(ui, 1.0f / 60.0f);
+        frame(ui, &s);
+        cui_end_frame(ui);
+    }
+    draw = cui_get_draw_data(ui);
+    pixels = malloc((size_t)draw->width_px * (size_t)draw->height_px * 4u);
+    if (pixels) {
+        cui_sw_render(sw, draw, pixels, draw->width_px, draw->height_px, draw->width_px * 4, CUI_SW_RGBA);
+        cui_write_png(out_path, pixels, draw->width_px, draw->height_px, draw->width_px * 4);
+        printf("%s: %d x %d\n", out_path, draw->width_px, draw->height_px);
+        free(pixels);
+    }
+    cui_destroy(ui);
+    cui_sw_destroy(sw);
+    return pixels ? 0 : 1;
+}
+
+int main(int argc, char **argv) {
+    static app_state s;
+    if (argc > 2 && !strcmp(argv[1], "--shot")) return write_shot(argv[2]);
+    seed(&s);
     return cui_app_run(&(cui_app_desc){ .title = "Halden", .width = 1440, .height = 940,
                                         .theme = CUI_THEME_DARK, .accent = CUI_ACCENT_GREEN }, frame, &s);
 }

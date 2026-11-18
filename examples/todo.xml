@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  examples/todo.c, the to-do list of docs/tutorial.md, described in a file.
+
+  The list of tasks is the app's data: examples/todoxml.c keeps it the way the C
+  example does and binds one bool per row, the field, the filter and the
+  counter. The two programs draw the same four tasks with the shot flag, and
+  those two pictures are compared.
+-->
+<Window Title="To do" Width="520" Height="640">
+
+  <Column Width="fill" FillV="1" Align="center" Background="background">
+    <Column Width="fill" MaxWidth="560" FillV="1" Pad="24" Gap="16">
+
+      <Row Gap="12" Align="end">
+        <Heading Level="2">To do</Heading>
+        <Spacer/>
+        <Text>{open} open, {done} done</Text>
+      </Row>
+
+      <Row Gap="8">
+        <Input Name="new-task" Bind="draft" Placeholder="Add a task" Width="fill"/>
+        <Button Text="Add" Variant="primary" Icon="plus" Disabled="{len(draft) == 0}"
+                OnClicked="add"/>
+      </Row>
+
+      <Row Gap="8" Align="center">
+        <Segmented Name="filter" Items="All|Open|Done" Bind="filter"/>
+        <Spacer/>
+        <Button Text="Clear done" Variant="ghost" Disabled="{donecount == 0}" OnClicked="clear"/>
+      </Row>
+
+      <Scroll Name="tasks" Width="fill" FillV="1" Gap="2">
+        <Row Gap="8" Align="center" Width="fill">
+          <Checkbox Text="Buy milk" Bind="task0" OnChanged="count"/>
+          <Spacer/>
+          <IconButton Icon="x" Tooltip="Delete" Variant="ghost" Size="sm" OnClicked="remove:0"/>
+        </Row>
+        <Row Gap="8" Align="center" Width="fill">
+          <Checkbox Text="Write the release notes" Bind="task1" OnChanged="count"/>
+          <Spacer/>
+          <IconButton Icon="x" Tooltip="Delete" Variant="ghost" Size="sm" OnClicked="remove:1"/>
+        </Row>
+        <Row Gap="8" Align="center" Width="fill">
+          <Checkbox Text="Call the bank" Bind="task2" OnChanged="count"/>
+          <Spacer/>
+          <IconButton Icon="x" Tooltip="Delete" Variant="ghost" Size="sm" OnClicked="remove:2"/>
+        </Row>
+        <Row Gap="8" Align="center" Width="fill">
+          <Checkbox Text="Ship 1.0" Bind="task3" OnChanged="count"/>
+          <Spacer/>
+          <IconButton Icon="x" Tooltip="Delete" Variant="ghost" Size="sm" OnClicked="remove:3"/>
+        </Row>
+      </Scroll>
+
+    </Column>
+  </Column>
+</Window>

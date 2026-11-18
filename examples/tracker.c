@@ -1,12 +1,21 @@
 /* Issue tracker: grouped issue list, custom status and priority glyphs,
  * a detail pane with properties and activity. Dark by default. Narrower
  * windows open the detail in a sheet, and a phone keeps the sidebar in a
- * drawer. */
+ * drawer.
+ *
+ *     tracker                   opens the window
+ *     tracker --shot out.png    draws it offscreen, software renderer
+ *
+ * The shot draws the board seeded below, so it can be compared byte for byte
+ * with examples/tracker_xml.c, the same window described in
+ * examples/tracker.xml. */
 #include <cui/cui.h>
 #include <cui/cui_app.h>
+#include <cui/cui_render.h>
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 enum { ST_BACKLOG, ST_TODO, ST_PROGRESS, ST_REVIEW, ST_DONE, ST_COUNT };
@@ -370,8 +379,58 @@ static void frame(cui_ctx *ui, void *user) {
     if (c >= 0) cui_toast(ui, cmds[c].title, .tone = CUI_TONE_SUCCESS);
 }
 
-int main(void) {
-    static app_state s = { .nav = 6 };
+/* The board the app opens with: the Engine team in the sidebar, the live issue
+ * first, three panes. examples/tracker_xml.c seeds the same values. */
+static void seed(app_state *s) {
+    memset(s, 0, sizeof *s);
+    s->nav = 6;
+}
+
+/* `tracker --shot out.png`: the same window drawn offscreen with the software
+ * renderer, with the viewport, the theme, the accent and the six frames of the
+ * app, so the two pictures can be compared. It reads nothing: the issues come
+ * from the table above and seed, and nothing on the shot's screen has been
+ * touched, so every value of the frame is the one the app computes on its first
+ * idle frame. */
+static int write_shot(const char *out_path) {
+    static app_state s;
+    cui_sw_renderer *sw = cui_sw_create();
+    cui_ctx *ui;
+    const cui_draw_data *draw;
+    unsigned char *pixels;
+    int i;
+    if (!sw) return 1;
+    seed(&s);
+    ui = cui_create(&(cui_ctx_desc){ .renderer = cui_sw_iface(sw), .theme = CUI_THEME_DARK,
+                                     .accent = CUI_ACCENT_NEUTRAL });
+    if (!ui) {
+        cui_sw_destroy(sw);
+        return 1;
+    }
+    cui_set_viewport(ui, 1440, 900, 1);
+    cui_input_mouse_leave(ui);
+    for (i = 0; i < 6; i++) {
+        cui_begin_frame(ui, 1.0f / 60.0f);
+        frame(ui, &s);
+        cui_end_frame(ui);
+    }
+    draw = cui_get_draw_data(ui);
+    pixels = malloc((size_t)draw->width_px * (size_t)draw->height_px * 4u);
+    if (pixels) {
+        cui_sw_render(sw, draw, pixels, draw->width_px, draw->height_px, draw->width_px * 4, CUI_SW_RGBA);
+        cui_write_png(out_path, pixels, draw->width_px, draw->height_px, draw->width_px * 4);
+        printf("%s: %d x %d\n", out_path, draw->width_px, draw->height_px);
+        free(pixels);
+    }
+    cui_destroy(ui);
+    cui_sw_destroy(sw);
+    return pixels ? 0 : 1;
+}
+
+int main(int argc, char **argv) {
+    static app_state s;
+    if (argc > 2 && !strcmp(argv[1], "--shot")) return write_shot(argv[2]);
+    seed(&s);
     return cui_app_run(&(cui_app_desc){ .title = "Orbit", .width = 1440, .height = 900,
                                         .theme = CUI_THEME_DARK, .accent = CUI_ACCENT_NEUTRAL }, frame, &s);
 }

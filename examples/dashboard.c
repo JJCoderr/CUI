@@ -1,9 +1,17 @@
 /* Metrics dashboard: sidebar, top bar, KPIs, charts and a table.
- * Below 760 points the sidebar becomes a drawer and the panels stack. */
+ * Below 760 points the sidebar becomes a drawer and the panels stack.
+ *
+ *     dashboard                    opens the window
+ *     dashboard --shot out.png     draws it offscreen with the software renderer,
+ *                                  which is how examples/dashboard_xml.c (the same
+ *                                  dashboard described in a document) is compared
+ *                                  with it */
 #include <cui/cui.h>
 #include <cui/cui_app.h>
+#include <cui/cui_render.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct {
@@ -219,7 +227,59 @@ static void frame(cui_ctx *ui, void *user) {
     if (c >= 0) cui_toast(ui, cmds[c].title, .tone = CUI_TONE_SUCCESS);
 }
 
-int main(void) {
-    static app_state s = { .sort = { 0, true }, .selected = 0, .range = 1 };
+/* The dashboard `dashboard --shot` draws, and the one the app opens with: the
+ * overview, the last thirty days, nothing typed in the search, the first row of
+ * the table in hand. examples/dashboard_xml.c seeds the same values. */
+static void seed(app_state *s) {
+    memset(s, 0, sizeof *s);
+    s->sort.column = 0;
+    s->sort.descending = true;
+    s->selected = 0;
+    s->range = 1;
+}
+
+/* `dashboard --shot out.png`: the same window drawn offscreen with the software
+ * renderer, with the viewport, the theme, the accent and the six frames of the
+ * app, so the two pictures can be compared. It reads nothing: the state comes
+ * from seed. */
+static int write_shot(const char *out_path) {
+    static app_state s;
+    cui_sw_renderer *sw = cui_sw_create();
+    cui_ctx *ui;
+    const cui_draw_data *draw;
+    unsigned char *pixels;
+    int i;
+    if (!sw) return 1;
+    seed(&s);
+    ui = cui_create(&(cui_ctx_desc){ .renderer = cui_sw_iface(sw), .theme = CUI_THEME_LIGHT,
+                                     .accent = CUI_ACCENT_BLUE });
+    if (!ui) {
+        cui_sw_destroy(sw);
+        return 1;
+    }
+    cui_set_viewport(ui, 1360, 900, 1);
+    cui_input_mouse_leave(ui);
+    for (i = 0; i < 6; i++) {
+        cui_begin_frame(ui, 1.0f / 60.0f);
+        frame(ui, &s);
+        cui_end_frame(ui);
+    }
+    draw = cui_get_draw_data(ui);
+    pixels = malloc((size_t)draw->width_px * (size_t)draw->height_px * 4u);
+    if (pixels) {
+        cui_sw_render(sw, draw, pixels, draw->width_px, draw->height_px, draw->width_px * 4, CUI_SW_RGBA);
+        cui_write_png(out_path, pixels, draw->width_px, draw->height_px, draw->width_px * 4);
+        printf("%s: %d x %d\n", out_path, draw->width_px, draw->height_px);
+        free(pixels);
+    }
+    cui_destroy(ui);
+    cui_sw_destroy(sw);
+    return pixels ? 0 : 1;
+}
+
+int main(int argc, char **argv) {
+    static app_state s;
+    if (argc > 2 && !strcmp(argv[1], "--shot")) return write_shot(argv[2]);
+    seed(&s);
     return cui_app_run(&(cui_app_desc){ .title = "Larkspur Dashboard", .width = 1360, .height = 900, .accent = CUI_ACCENT_BLUE }, frame, &s);
 }

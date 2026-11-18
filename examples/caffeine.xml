@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  examples/caffeine.c, described in a file.
+
+  The model — one curve per cup, the peak, what is left at bedtime and the
+  verdict — is the app's data and lives in examples/caffeine_xml.c, which also
+  registers the two tags the picture needs: <Level> (the dot-matrix chart with
+  its annotations) and <Cups> (the event track under it). Everything about the
+  layout, the type and the colors is here.
+-->
+<Window Title="Caffeine" Width="900" Height="700" Theme="dark" Accent="blue">
+
+  <Column Width="fill" FillV="1" Background="background" Align="center">
+    <Column Width="fill" MaxWidth="880" FillV="1" Pad="28" Gap="22">
+
+      <Row Width="fill" Gap="28" Wrap="true" Align="end">
+        <Column Gap="4">
+          <Text Font="mono">CAFFEINE</Text>
+          <Text Font="mono" Color="textMuted" Size="12">{summary}</Text>
+        </Column>
+        <Spacer/>
+        <Readout Label="PEAK" Value="{peak}" Unit="MG" Detail="{peakAt}" Size="sm"/>
+        <Readout Label="AT BED" Value="{atbed}" Unit="MG" Size="sm" Accent="{over}" Detail="{bedLine}"/>
+      </Row>
+
+      <Column Width="fill" Gap="0">
+        <Level Name="level"/>
+        <Cups Name="cups"/>
+      </Column>
+
+      <Spacer/>
+      <DotDisplay Pitch="3" Width="fill" Accent="{danger}">{verdict}</DotDisplay>
+
+    </Column>
+  </Column>
+</Window>

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  examples/assistant.c, described in a file.
+
+  The conversation is the app's data: examples/assistant_xml.c keeps the seven
+  chats, the two files in the composer, the models, the sources, the plan and
+  the answer the way the C example does. Everything about the window, the
+  sidebar, the top row, the message list, the composer and the workspace panel
+  is here. The pieces a document cannot draw itself are tags registered in
+  examples/assistant_xml.c: <Answer> (one answer with its reasoning, tool call,
+  text, citations and buttons, which streams while it plays), <ChatMessage>,
+  <ChatComposer>, <ModelPicker>, <ContextMeter>, <Plan>, <PromptSuggestions>,
+  <UserMenu> and <Drawer>. The sidebar is written once as a <Widget> and used
+  twice: in the window, and inside the drawer a phone-sized window opens, where
+  it is as wide as the sheet and has no surface or padding of its own.
+
+  The two programs seed the same state, so their shot output is compared byte
+  for byte.
+-->
+<Window Title="Muse" Width="1440" Height="900" Theme="dark" Accent="neutral"
+        Background="background">
+
+  <!-- the chat list: the panel on a wide window, the drawer on a phone -->
+  <Widget Name="Sidebar" PaneWidth="264" PanePad="12" PaneBackground="surfaceMuted">
+    <Column Width="{PaneWidth}" Height="fill" Background="{PaneBackground}"
+            Pad="{PanePad}" Gap="2">
+
+      <Row Gap="10" PadX="6" PadTop="4" PadBottom="10" Align="center">
+        <Box Width="28" Height="28" Radius="9" Background="accent" Direction="stack"
+             Align="center" Justify="center">
+          <Text Font="display" Size="16" Color="accentForeground" LineHeight="1">M</Text>
+        </Box>
+        <Text Font="medium" Size="15" Width="fill" Nowrap="true">Muse</Text>
+        <IconButton Icon="square-pen" Size="sm" Tooltip="New chat" OnClicked="new-chat"/>
+      </Row>
+
+      <NavSection Text="Today"/>
+      <NavItem Text="Why immediate mode feels fast" Icon="message-square" Group="chats"
+               Selected="{chat == 0}" OnClicked="chat:0"/>
+      <NavItem Text="Quarterly report summary" Icon="message-square" Group="chats"
+               Selected="{chat == 1}" OnClicked="chat:1"/>
+      <NavItem Text="Spring presets for menus" Icon="message-square" Group="chats"
+               Selected="{chat == 2}" OnClicked="chat:2"/>
+      <Box Height="10"/>
+      <NavSection Text="Previous 7 days"/>
+      <NavItem Text="Gantt chart layout ideas" Icon="message-square" Group="chats"
+               Selected="{chat == 3}" OnClicked="chat:3"/>
+      <NavItem Text="Kanban drag and drop" Icon="message-square" Group="chats"
+               Selected="{chat == 4}" OnClicked="chat:4"/>
+      <NavItem Text="Color palette for charts" Icon="message-square" Group="chats"
+               Selected="{chat == 5}" OnClicked="chat:5"/>
+      <NavItem Text="Release notes draft" Icon="message-square" Group="chats"
+               Selected="{chat == 6}" OnClicked="chat:6"/>
+
+      <Spacer/>
+
+      <Card Pad="14" Gap="8">
+        <Row Gap="8" Align="center">
+          <Icon Icon="zap" Size="14" Color="accent"/>
+          <Text Font="medium" Size="13" Width="fill">Usage this month</Text>
+        </Row>
+        <Progress Value="0.42" Height="6"/>
+        <Text Size="12" Color="textSecondary">4,210 of 10,000 messages</Text>
+      </Card>
+      <Box Height="6"/>
+
+      <UserMenu Text="Mara Quinn" Detail="mara@muse.dev" Status="online">
+        <MenuItem Text="Settings" Icon="settings"/>
+        <MenuItem Text="Keyboard shortcuts" Icon="keyboard"/>
+        <MenuSeparator/>
+        <MenuItem Text="Log out" Icon="log-out"/>
+      </UserMenu>
+
+    </Column>
+  </Widget>
+
+  <Row Width="fill" Height="fill" Align="stretch" Background="background">
+
+    <Sidebar If="{!narrow}"/>
+    <Separator If="{!narrow}"/>
+
+    <!-- the conversation -->
+    <Column Width="fill" Height="fill">
+
+      <Row Width="fill" PadX="{narrow ? 12 : 20}" PadY="12" Gap="{narrow ? 6 : 10}"
+           Align="center">
+        <IconButton If="{narrow}" Icon="menu" Tooltip="Chats" OnClicked="drawer"/>
+        <ModelPicker Ghost="true" Placement="bottomstart"/>
+        <Spacer/>
+        <ContextMeter Used="113400" Limit="200000"/>
+        <IconButton If="{narrow}" Icon="share-2" Tooltip="Share"/>
+        <Button If="{!narrow}" Text="Share" Icon="share-2" Variant="outline" Size="sm"/>
+      </Row>
+
+      <Separator/>
+
+      <Scroll Name="chat" Width="fill" Height="fill" Fade="true">
+        <Row Width="fill" Justify="center" PadX="{narrow ? 12 : 24}"
+             PadY="{narrow ? 16 : 24}">
+          <Column Width="fill" MaxWidth="760" Gap="14">
+            <ChatMessage Text="Why do immediate mode toolkits feel so fast? Cite a few sources."
+                         Mine="true"/>
+            <Answer Name="first" Live="false"/>
+            <Gap Size="12" If="{asked}"/>
+            <ChatMessage Text="{askedText}" Mine="true" If="{asked}"/>
+            <Answer Name="second" Live="true" If="{asked}"/>
+          </Column>
+        </Row>
+      </Scroll>
+
+      <Row Width="fill" Justify="center" PadX="{narrow ? 12 : 24}"
+           PadBottom="{narrow ? 12 : 20}">
+        <Column Width="fill" MaxWidth="760" Gap="8">
+          <ChatComposer Placeholder="Ask a follow up" Busy="{busy}"/>
+          <Text Size="12" Color="textMuted" Align="center" Width="fill">Answers can be wrong. Each one links the sources it used.</Text>
+        </Column>
+      </Row>
+
+    </Column>
+
+    <!-- the workspace: the plan, the files and what to ask next -->
+    <Separator If="{side}"/>
+    <Column If="{side}" Width="330" Height="fill" Background="surface" Pad="20" Gap="16">
+      <Text Font="medium" Size="15">Workspace</Text>
+      <Plan Title="Plan"/>
+      <Label>Files</Label>
+      <Column Gap="6" Width="fill">
+        <Row Gap="10" Align="center" Width="fill" Pad="8" Radius="12"
+             Background="surfaceMuted">
+          <Icon Icon="file-text" Size="16" Color="textSecondary"/>
+          <Text Size="13" Width="fill" Nowrap="true">quarterly-report.pdf</Text>
+          <Text Size="12" Color="textMuted">2.4 MB</Text>
+        </Row>
+        <Row Gap="10" Align="center" Width="fill" Pad="8" Radius="12"
+             Background="surfaceMuted">
+          <Icon Icon="file-text" Size="16" Color="textSecondary"/>
+          <Text Size="13" Width="fill" Nowrap="true">metrics.csv</Text>
+          <Text Size="12" Color="textMuted">86 KB</Text>
+        </Row>
+        <Row Gap="10" Align="center" Width="fill" Pad="8" Radius="12"
+             Background="surfaceMuted">
+          <Icon Icon="file-text" Size="16" Color="textSecondary"/>
+          <Text Size="13" Width="fill" Nowrap="true">notes.md</Text>
+          <Text Size="12" Color="textMuted">4 KB</Text>
+        </Row>
+      </Column>
+      <Label>Try asking</Label>
+      <PromptSuggestions Columns="1"/>
+    </Column>
+
+  </Row>
+
+  <Drawer Text="Muse" Side="left" Size="300">
+    <Sidebar PaneWidth="fill" PanePad="0" PaneBackground="transparent"/>
+  </Drawer>
+
+</Window>

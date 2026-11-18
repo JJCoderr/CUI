@@ -1,11 +1,18 @@
 /* Notes: a small but complete app. Split view, search, create, edit,
  * pin and delete notes, with keyboard shortcuts and a command palette.
- * On a phone the list and the editor take turns. */
+ * On a phone the list and the editor take turns.
+ *
+ *     notes                    opens the window
+ *     notes --shot out.png     draws it offscreen with the software renderer,
+ *                              which is how examples/notes_xml.c (the same window
+ *                              in XML) is compared with it */
 #include <cui/cui.h>
 #include <cui/cui_app.h>
+#include <cui/cui_render.h>
 
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MAX_NOTES 64
@@ -207,15 +214,61 @@ static void frame(cui_ctx *ui, void *user) {
     }
 }
 
-int main(void) {
+/* The notes `notes --shot` draws, and the ones the app opens with: four of
+ * them, the first pinned, so the picture shows both icons and both passes of
+ * the list. examples/notes_xml.c starts from the same four. */
+static void seed(notes_app *a) {
+    a->split = 0.32f;
+    add_note(a, "Launch checklist", "Ship the 1.0 release.\n\n- Final pass on docs\n- Record the demo video\n- Write the announcement post\n- Celebrate", 1);
+    add_note(a, "Reading list", "The Design of Everyday Things\nA Pattern Language\nThe Art of Computer Programming", 0);
+    add_note(a, "App ideas", "A calm habit tracker with springy check marks. A tiny music player that lives in the menu bar.", 2);
+    add_note(a, "Meeting notes", "Discussed the roadmap for Q1. Focus on accessibility, keyboard support and docs.", 1);
+    a->notes[0].pinned = true;
+    a->selected = 0;
+    a->editing = false;   /* a phone opens on the list */
+}
+
+/* `notes --shot out.png`: the same window drawn offscreen with the software
+ * renderer, for a machine without one -- and to compare with examples/notes_xml.c,
+ * the same app described in XML. It reads nothing: the notes come from seed. */
+static int write_shot(const char *out_path) {
     static notes_app a;
-    a.split = 0.32f;
-    add_note(&a, "Launch checklist", "Ship the 1.0 release.\n\n- Final pass on docs\n- Record the demo video\n- Write the announcement post\n- Celebrate", 1);
-    add_note(&a, "Reading list", "The Design of Everyday Things\nA Pattern Language\nThe Art of Computer Programming", 0);
-    add_note(&a, "App ideas", "A calm habit tracker with springy check marks. A tiny music player that lives in the menu bar.", 2);
-    add_note(&a, "Meeting notes", "Discussed the roadmap for Q1. Focus on accessibility, keyboard support and docs.", 1);
-    a.notes[0].pinned = true;
-    a.selected = 0;
-    a.editing = false;   /* a phone opens on the list */
+    cui_sw_renderer *sw = cui_sw_create();
+    cui_ctx *ui;
+    const cui_draw_data *draw;
+    unsigned char *pixels;
+    int i;
+    if (!sw) return 1;
+    seed(&a);
+    ui = cui_create(&(cui_ctx_desc){ .renderer = cui_sw_iface(sw), .theme = CUI_THEME_LIGHT,
+                                     .accent = CUI_ACCENT_AMBER });
+    if (!ui) {
+        cui_sw_destroy(sw);
+        return 1;
+    }
+    cui_set_viewport(ui, 1100, 720, 1);
+    cui_input_mouse_leave(ui);
+    for (i = 0; i < 6; i++) {
+        cui_begin_frame(ui, 1.0f / 60.0f);
+        frame(ui, &a);
+        cui_end_frame(ui);
+    }
+    draw = cui_get_draw_data(ui);
+    pixels = malloc((size_t)draw->width_px * (size_t)draw->height_px * 4u);
+    if (pixels) {
+        cui_sw_render(sw, draw, pixels, draw->width_px, draw->height_px, draw->width_px * 4, CUI_SW_RGBA);
+        cui_write_png(out_path, pixels, draw->width_px, draw->height_px, draw->width_px * 4);
+        printf("%s: %d x %d\n", out_path, draw->width_px, draw->height_px);
+        free(pixels);
+    }
+    cui_destroy(ui);
+    cui_sw_destroy(sw);
+    return pixels ? 0 : 1;
+}
+
+int main(int argc, char **argv) {
+    static notes_app a;
+    if (argc > 2 && !strcmp(argv[1], "--shot")) return write_shot(argv[2]);
+    seed(&a);
     return cui_app_run(&(cui_app_desc){ .title = "Notes", .width = 1100, .height = 720, .accent = CUI_ACCENT_AMBER }, frame, &a);
 }

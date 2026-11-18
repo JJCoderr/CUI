@@ -1,11 +1,20 @@
 /* Assistant: a chat app with reasoning, tool calls, a plan, sources and a
  * composer. Sending a message plays a short scripted answer. Dark by default.
  * The workspace panel closes below 1180 points and the chat list becomes a
- * drawer below 760. */
+ * drawer below 760.
+ *
+ *     assistant                   opens the window
+ *     assistant --shot out.png    draws it offscreen, software renderer
+ *
+ * The shot draws the conversation seeded below offscreen, so it can be compared
+ * byte for byte with examples/assistant_xml.c, the same window described in
+ * examples/assistant.xml. */
 #include <cui/cui.h>
 #include <cui/cui_app.h>
+#include <cui/cui_render.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct {
@@ -211,9 +220,63 @@ static void frame(cui_ctx *ui, void *user) {
     cui_sheet(ui, "Muse", &s->drawer, .side = CUI_SIDE_LEFT, .size = 300) { sidebar(ui, s, true); }
 }
 
-int main(void) {
-    static app_state s = { .started = -1, .files = { "quarterly-report.pdf", "metrics.csv" }, .file_count = 2, .removed = -1,
-                           .draft = "Now compare these numbers with last quarter." };
+/* The conversation `assistant --shot` draws, and the one the app opens with:
+ * the first chat open, nothing asked yet, two files attached and the draft
+ * half written. examples/assistant_xml.c seeds the same values. */
+static void seed(app_state *s) {
+    memset(s, 0, sizeof *s);
+    s->started = -1;
+    s->removed = -1;
+    s->files[0] = "quarterly-report.pdf";
+    s->files[1] = "metrics.csv";
+    s->file_count = 2;
+    snprintf(s->draft, sizeof s->draft, "Now compare these numbers with last quarter.");
+}
+
+/* `assistant --shot out.png`: the same window drawn offscreen with the software
+ * renderer, with the viewport, the theme, the accent and the six frames of the
+ * app, so the two pictures can be compared. It reads nothing: the conversation
+ * comes from seed, and with no answer playing every value of the frame is the
+ * same one the app would compute. */
+static int write_shot(const char *out_path) {
+    static app_state s;
+    cui_sw_renderer *sw = cui_sw_create();
+    cui_ctx *ui;
+    const cui_draw_data *draw;
+    unsigned char *pixels;
+    int i;
+    if (!sw) return 1;
+    seed(&s);
+    ui = cui_create(&(cui_ctx_desc){ .renderer = cui_sw_iface(sw), .theme = CUI_THEME_DARK,
+                                     .accent = CUI_ACCENT_NEUTRAL });
+    if (!ui) {
+        cui_sw_destroy(sw);
+        return 1;
+    }
+    cui_set_viewport(ui, 1440, 900, 1);
+    cui_input_mouse_leave(ui);
+    for (i = 0; i < 6; i++) {
+        cui_begin_frame(ui, 1.0f / 60.0f);
+        frame(ui, &s);
+        cui_end_frame(ui);
+    }
+    draw = cui_get_draw_data(ui);
+    pixels = malloc((size_t)draw->width_px * (size_t)draw->height_px * 4u);
+    if (pixels) {
+        cui_sw_render(sw, draw, pixels, draw->width_px, draw->height_px, draw->width_px * 4, CUI_SW_RGBA);
+        cui_write_png(out_path, pixels, draw->width_px, draw->height_px, draw->width_px * 4);
+        printf("%s: %d x %d\n", out_path, draw->width_px, draw->height_px);
+        free(pixels);
+    }
+    cui_destroy(ui);
+    cui_sw_destroy(sw);
+    return pixels ? 0 : 1;
+}
+
+int main(int argc, char **argv) {
+    static app_state s;
+    if (argc > 2 && !strcmp(argv[1], "--shot")) return write_shot(argv[2]);
+    seed(&s);
     return cui_app_run(&(cui_app_desc){ .title = "Muse", .width = 1440, .height = 900,
                                         .theme = CUI_THEME_DARK, .accent = CUI_ACCENT_NEUTRAL }, frame, &s);
 }
