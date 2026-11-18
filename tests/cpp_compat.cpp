@@ -3,6 +3,15 @@
 #include <cui/cui.h>
 #include <cui/cui_app.h>
 #include <cui/cui_render.h>
+#include <cui/cui_xml.h>
+
+// The XML layer's declaration is C++ clean too: a document, a value, an action.
+static void cpp_xml(cui_ctx *ui, cui_xml *doc) {
+    cui_xml_bind_bool(doc, "notify", nullptr);
+    cui_xml_on(doc, "file.save", nullptr, nullptr);
+    cui_xml_render(doc, ui);
+    cui_xml_free(doc);
+}
 
 void cpp_ui(cui_ctx *ui) {
     cui_box_begin(ui, nullptr);

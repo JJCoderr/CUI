@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The whole window of this demo is described here; examples/xml.c only binds
+  the values and the actions. Save this file while the app runs: the interface
+  follows, and what was typed stays.
+
+  Things worth trying:
+    - change a Width, a Gap or a Color here and save;
+    - type in Folder, move Scale, flip Notifications, pick a page;
+    - the dialog: the settings icon at the bottom right (show:prefs below);
+    - Ctrl+S and Ctrl+Q (the two <Shortcut> elements at the end).
+-->
+<Window Title="CUI XML" Width="1080" Height="760" Pad="20" Gap="14" Theme="light" Accent="violet">
+
+  <!-- A tag of our own. Label, Hint and Wide are its parameters; anything
+       else written where it is used goes to the <Row> it becomes. -->
+  <Widget Name="Field" Label="Name" Hint="Type here" Wide="false">
+    <Row Gap="10" Align="center">
+      <Label Width="{Wide ? 120 : 84}">{Label}</Label>
+      <Input Name="field-{Label}" Placeholder="{Hint}" Fill="1"/>
+      <Children/>
+    </Row>
+  </Widget>
+
+  <Row Gap="12" Align="center">
+    <Heading Level="1">Workspace</Heading>
+    <Badge Text="dev" Tone="violet" Dot="true"/>
+    <Spacer/>
+    <Switch Name="notify" Text="Notifications" Bind="notify"/>
+    <IconButton Icon="moon" Tooltip="Toggle the theme" OnClicked="theme.toggle"/>
+  </Row>
+
+  <Tabs Name="pages" Items="Overview|Files|Team" Bind="tab"/>
+
+  <Split Ratio="0.6" Height="fill">
+
+    <Column Gap="12" FillV="1">
+      <Card Gap="10">
+        <Heading Level="3">Project</Heading>
+        <Field Label="Name" Hint="cui-xml"/>
+        <Field Label="Owner" Wide="true">
+          <Chip Text="shared" Bind="shared"/>
+        </Field>
+        <Row Gap="8" Align="center">
+          <Input Name="folder" Label="Folder" Placeholder="Projects/cui" Prefix="~/" Fill="1"/>
+          <Button Text="Browse" Icon="folder" OnClicked="file.browse"/>
+          <Button Text="Save" Variant="Primary" Icon="check" Tooltip="Ctrl+S" OnClicked="file.save"/>
+        </Row>
+        <Slider Name="scale" Text="Scale" Min="0.5" Max="3" Step="0.1" Format="%.1fx"
+                Bind="scale" ShowValue="true"/>
+      </Card>
+
+      <Card Gap="8" FillV="1">
+        <Row Align="center">
+          <Heading Level="3">Files</Heading>
+          <Spacer/>
+          <Button Text="Open" Variant="Ghost" Icon="arrow-up-right" OnClicked="file.open"/>
+        </Row>
+        <Table Striped="true" Selectable="true" Height="220">
+          <TableColumn Title="Name" Sortable="true"/>
+          <TableColumn Title="Size" Width="90" Align="end"/>
+          <TableColumn Title="Changed" Width="130" Align="end"/>
+          <TableRow OnClicked="row.picked">
+            <Cell Text="main.c"/>
+            <Cell Text="12 KB"/>
+            <Cell Text="2 min ago"/>
+          </TableRow>
+          <TableRow>
+            <Cell Text="cui_xml.c"/>
+            <Cell Text="38 KB"/>
+            <Cell Text="just now"/>
+          </TableRow>
+          <TableRow>
+            <Cell Text="cui_xml_widgets.c"/>
+            <Cell Text="52 KB"/>
+            <Cell Text="just now"/>
+          </TableRow>
+          <TableRow>
+            <Cell Text="README.md"/>
+            <Cell Text="4 KB"/>
+            <Cell Text="yesterday"/>
+          </TableRow>
+        </Table>
+      </Card>
+    </Column>
+
+    <Column Gap="12" FillV="1">
+      <Row Gap="12" Align="stretch">
+        <Metric Label="Builds today" Value="128" Delta="4.2" DeltaLabel="+12 this week" Fill="1"/>
+        <Metric Label="Open issues" Value="7" Delta="-2.5" DeltaLabel="-2 this week" Fill="1"
+                LowerIsBetter="true"/>
+      </Row>
+
+      <Card Gap="8" FillV="1">
+        <Heading Level="3">Activity</Heading>
+        <LineChart Height="170" Area="true" Smooth="true" Format="%.0f">
+          <Series Name="Builds" Values="3,6,4,9,7,12,10,14"/>
+          <Series Name="Tests" Values="1,3,2,5,4,7,6,9"/>
+        </LineChart>
+        <Progress Value="0.62" Label="Shipping" ShowValue="true"/>
+      </Card>
+
+      <Card Gap="6">
+        <Heading Level="3">Team</Heading>
+        <Repeat Count="3" Var="i">
+          <ListItem Text="Member {i}" Subtitle="Engineering" Trailing="{i}h" Icon="user"/>
+        </Repeat>
+        <Accordion Text="Why this list is short" Open="false">
+          <Muted>It comes from a &lt;Repeat&gt; element: one line of XML, three rows.</Muted>
+        </Accordion>
+      </Card>
+    </Column>
+
+  </Split>
+
+  <StatusBar>
+    <StatusText Text="Ready" Icon="circle" Tone="success"/>
+    <StatusItem Text="UTF-8"/>
+    <StatusSpacer/>
+    <StatusText Text="{clicks} actions since the start"/>
+  </StatusBar>
+
+  <Dialog Name="prefs" Title="Preferences" Description="Drawn over the window, closed with hide:prefs." Width="420">
+    <Column Gap="10">
+      <Switch Name="notify-prefs" Text="Notifications" Bind="notify"/>
+      <Slider Name="scale-prefs" Text="Scale" Min="0.5" Max="3" Step="0.1" Bind="scale"/>
+      <Input Name="folder-prefs" Label="Folder" Prefix="~/" Fill="1"/>
+      <Row Gap="8">
+        <Spacer/>
+        <Button Text="Close" Variant="Primary" OnClicked="hide:prefs"/>
+      </Row>
+    </Column>
+  </Dialog>
+
+  <!-- Keys, and the value the status bar shows. -->
+  <Shortcut Keys="Ctrl+S" Action="file.save"/>
+  <Shortcut Keys="Ctrl+Q" Action="app.quit"/>
+  <Var Name="clicks" Value="0"/>
+
+</Window>

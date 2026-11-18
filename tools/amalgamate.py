@@ -31,7 +31,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INCLUDE_DIRS = [os.path.join(ROOT, "include"), os.path.join(ROOT, "src")]
 LOCAL = re.compile(r'^\s*#\s*include\s+"([^"]+)"')
 
-PUBLIC = ["include/cui/cui.h", "include/cui/cui_app.h", "include/cui/cui_render.h"]
+PUBLIC = ["include/cui/cui.h", "include/cui/cui_app.h", "include/cui/cui_render.h",
+          "include/cui/cui_xml.h"]
 
 
 def library_sources():

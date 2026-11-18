@@ -2,9 +2,11 @@
  * a transport bar. Shows custom painting mixed with stock components. */
 #include <cui/cui.h>
 #include <cui/cui_app.h>
+#include <cui/cui_render.h>   /* the software renderer, for --shot */
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 typedef struct { const char *title, *artist, *album; int seconds; int art; } track;
@@ -364,8 +366,46 @@ static void frame(cui_ctx *ui, void *user) {
     cui_sheet(ui, "Tempo", &s->drawer, .side = CUI_SIDE_LEFT, .size = 300) { library(ui, s); }
 }
 
-int main(void) {
+/* `music --shot out.png`: the same window, drawn offscreen with the software
+ * renderer, for a machine that cannot open one -- and to compare with
+ * examples/music_xml.c, the same player described in XML. */
+static int write_shot(const char *out_path) {
     static app_state s = { .position = 74, .volume = 70, .liked = { true, false, true } };
+    cui_sw_renderer *sw = cui_sw_create();
+    cui_ctx *ui;
+    const cui_draw_data *draw;
+    unsigned char *pixels;
+    int i;
+    if (!sw) return 1;
+    ui = cui_create(&(cui_ctx_desc){ .renderer = cui_sw_iface(sw), .theme = CUI_THEME_DARK,
+                                     .accent = CUI_ACCENT_CORAL });
+    if (!ui) {
+        cui_sw_destroy(sw);
+        return 1;
+    }
+    cui_set_viewport(ui, 1440, 1180, 1);
+    cui_input_mouse_leave(ui);
+    for (i = 0; i < 6; i++) {
+        cui_begin_frame(ui, 1.0f / 60.0f);
+        frame(ui, &s);
+        cui_end_frame(ui);
+    }
+    draw = cui_get_draw_data(ui);
+    pixels = malloc((size_t)draw->width_px * (size_t)draw->height_px * 4u);
+    if (pixels) {
+        cui_sw_render(sw, draw, pixels, draw->width_px, draw->height_px, draw->width_px * 4, CUI_SW_RGBA);
+        cui_write_png(out_path, pixels, draw->width_px, draw->height_px, draw->width_px * 4);
+        printf("%s: %d x %d\n", out_path, draw->width_px, draw->height_px);
+        free(pixels);
+    }
+    cui_destroy(ui);
+    cui_sw_destroy(sw);
+    return pixels ? 0 : 1;
+}
+
+int main(int argc, char **argv) {
+    static app_state s = { .position = 74, .volume = 70, .liked = { true, false, true } };
+    if (argc > 2 && !strcmp(argv[1], "--shot")) return write_shot(argv[2]);
     return cui_app_run(&(cui_app_desc){ .title = "Tempo", .width = 1440, .height = 1180,
                                         .theme = CUI_THEME_DARK, .accent = CUI_ACCENT_CORAL }, frame, &s);
 }

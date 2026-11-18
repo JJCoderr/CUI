@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The music player of examples/music.c, described in a file.
+
+  The C file (examples/music_xml.c) keeps what a document cannot say: the track
+  table, the screen-printed cover art, the equalizer, and the action handler.
+  Everything about the layout, the type and the colors is here.
+
+  Three tags are made by the C side and used below like the built-in ones:
+    <Cover Art="0" Size="196" Radius="16"/>   the cover art
+    <Eq Size="18x16"/>                        the playing equalizer
+    <Hover Height="56" Selected="true">       a row that lights up on hover
+  They are registered with cui_xml_register_tag, so the document stays the
+  place where the interface lives.
+-->
+<Window Title="Tempo" Width="1440" Height="1180" Theme="dark" Accent="coral" Background="background">
+
+  <Row Width="fill" FillV="1" Align="stretch">
+
+    <!-- ============================ sidebar ============================ -->
+    <Column Width="248" FillV="1" Pad="12" Gap="2" Background="surfaceMuted">
+      <Row Gap="10" PadX="6" PadTop="4" PadBottom="14" Align="center">
+        <Box Width="26" Height="26" Radius="13" Background="accent" Direction="stack"
+             Align="center" Justify="center">
+          <Icon Icon="audio-lines" Size="14" Color="accentForeground"/>
+        </Box>
+        <Text Font="medium" Size="15">Tempo</Text>
+      </Row>
+
+      <NavItem Text="Home" Icon="house" Group="nav" Selected="{nav == 0}" OnClicked="nav:0"/>
+      <NavItem Text="Browse" Icon="compass" Group="nav" Selected="{nav == 1}" OnClicked="nav:1"/>
+      <NavItem Text="Radio" Icon="radio" Group="nav" Selected="{nav == 2}" OnClicked="nav:2"/>
+
+      <Gap Size="14"/>
+      <Row PadRight="4" Align="center">
+        <Box Width="fill"><NavSection Text="Your library"/></Box>
+        <IconButton Icon="plus" Size="sm" Tooltip="New playlist"/>
+      </Row>
+
+      <Hover Height="52" Selected="{playlist == 0}" OnClicked="playlist:0">
+        <Row Width="fill" Height="fill" PadX="8" Gap="12" Align="center">
+          <Cover Art="0" Size="38" Radius="8"/>
+          <Column Gap="0" Width="fill">
+            <Text Font="medium" Size="13" Nowrap="true">Late Night Coding</Text>
+            <Text Size="12" Color="textMuted" Nowrap="true">48 songs</Text>
+          </Column>
+        </Row>
+      </Hover>
+      <Hover Height="52" Selected="{playlist == 1}" OnClicked="playlist:1">
+        <Row Width="fill" Height="fill" PadX="8" Gap="12" Align="center">
+          <Cover Art="1" Size="38" Radius="8"/>
+          <Column Gap="0" Width="fill">
+            <Text Font="medium" Size="13" Nowrap="true">Deep Focus</Text>
+            <Text Size="12" Color="textMuted" Nowrap="true">112 songs</Text>
+          </Column>
+        </Row>
+      </Hover>
+      <Hover Height="52" Selected="{playlist == 2}" OnClicked="playlist:2">
+        <Row Width="fill" Height="fill" PadX="8" Gap="12" Align="center">
+          <Cover Art="2" Size="38" Radius="8"/>
+          <Column Gap="0" Width="fill">
+            <Text Font="medium" Size="13" Nowrap="true">Long Drive</Text>
+            <Text Size="12" Color="textMuted" Nowrap="true">64 songs</Text>
+          </Column>
+        </Row>
+      </Hover>
+      <Hover Height="52" Selected="{playlist == 3}" OnClicked="playlist:3">
+        <Row Width="fill" Height="fill" PadX="8" Gap="12" Align="center">
+          <Cover Art="3" Size="38" Radius="8"/>
+          <Column Gap="0" Width="fill">
+            <Text Font="medium" Size="13" Nowrap="true">Morning Coffee</Text>
+            <Text Size="12" Color="textMuted" Nowrap="true">37 songs</Text>
+          </Column>
+        </Row>
+      </Hover>
+      <Hover Height="52" Selected="{playlist == 4}" OnClicked="playlist:4">
+        <Row Width="fill" Height="fill" PadX="8" Gap="12" Align="center">
+          <Cover Art="5" Size="38" Radius="8"/>
+          <Column Gap="0" Width="fill">
+            <Text Font="medium" Size="13" Nowrap="true">Rainy Afternoons</Text>
+            <Text Size="12" Color="textMuted" Nowrap="true">29 songs</Text>
+          </Column>
+        </Row>
+      </Hover>
+    </Column>
+
+    <Separator/>
+
+    <!-- ============================ main ============================ -->
+    <Column Width="fill" FillV="1">
+
+      <Row Width="fill" PadX="32" PadY="14" Gap="8" Align="center">
+        <IconButton Icon="chevron-left" Tooltip="Back"/>
+        <IconButton Icon="chevron-right" Tooltip="Forward"/>
+        <Box Fill="4" MaxWidth="320">
+          <Search Name="search" Placeholder="Songs, artists, podcasts" Bind="search" MaxLength="64"/>
+        </Box>
+        <Spacer/>
+        <IconButton Icon="bell" Tooltip="What's new"/>
+        <Avatar Size="30">Mara Quinn</Avatar>
+      </Row>
+
+      <Scroll Name="main" FillV="1" Pad="32" Gap="28" Fade="true">
+
+        <!-- hero -->
+        <Row Width="fill" Gap="28" Align="end" Wrap="true">
+          <Cover Art="0" Size="196" Radius="16"/>
+          <Column Gap="10" Width="fill" MinWidth="260">
+            <Text Font="display" Size="44" LineHeight="1.1">Late Night Coding</Text>
+            <Text Color="textSecondary">Warm synths and steady beats for the hours after everyone has logged off.</Text>
+            <Row Gap="8" Align="center">
+              <Avatar Size="22">Mara Quinn</Avatar>
+              <Text Font="medium" Size="13">Mara Quinn</Text>
+              <Text Size="13" Color="textMuted">&#183;  48 songs  &#183;  3 h 12 min</Text>
+            </Row>
+            <Gap Size="4"/>
+            <Row Gap="8" Align="center" Wrap="true">
+              <Button Text="{paused ? 'Play' : 'Pause'}" Icon="{paused ? 'play' : 'pause'}"
+                      Variant="primary" Size="lg" OnClicked="toggle:paused"/>
+              <Button Text="Shuffle" Icon="shuffle" Size="lg"
+                      Variant="{shuffle ? 'secondary' : 'outline'}" OnClicked="toggle:shuffle"/>
+              <IconButton Icon="heart" Size="lg" Tooltip="Save to library"/>
+              <IconButton Icon="download" Size="lg" Tooltip="Download"/>
+              <Menu Text="More" Icon="ellipsis" IconOnly="true" Variant="ghost">
+                <MenuItem Text="Add to queue" Icon="list"/>
+                <MenuItem Text="Share" Icon="share-2"/>
+              </Menu>
+            </Row>
+          </Column>
+        </Row>
+
+        <!-- track list -->
+        <Column Width="fill" Gap="2">
+          <Row Width="fill" PadX="14" PadBottom="8" Gap="14" Align="center">
+            <Text Size="12" Color="textMuted" Width="18" Align="center">#</Text>
+            <Text Size="12" Color="textMuted" Width="fill">Title</Text>
+            <Text Size="12" Color="textMuted" Width="180">Album</Text>
+            <Box Width="28"/>
+            <Box Width="44" Align="end"><Icon Icon="clock" Size="14" Color="textMuted"/></Box>
+          </Row>
+          <Separator/>
+          <Gap Size="6"/>
+
+          <Hover Height="56" Selected="{playing == 0}" OnClicked="play:0">
+            <Row Width="fill" Height="fill" PadX="14" Gap="14" Align="center">
+              <Eq If="playing == 0 &amp;&amp; !paused" Size="18x16"/>
+              <Text If="!(playing == 0 &amp;&amp; !paused)" Size="13" Width="18" Align="center"
+                    Color="{playing == 0 ? 'accent' : 'textMuted'}">1</Text>
+              <Row Gap="12" Width="fill" Align="center">
+                <Cover Art="0" Size="40" Radius="8"/>
+                <Column Gap="1" Width="fill">
+                  <Text Font="medium" Nowrap="true" Color="{playing == 0 ? 'accent' : 'text'}">Low Tide</Text>
+                  <Text Size="13" Color="textSecondary" Nowrap="true">Marlow Avenue</Text>
+                </Column>
+              </Row>
+              <Text Size="13" Color="textSecondary" Width="180" Nowrap="true">Night Shift</Text>
+              <IconButton Icon="heart" Size="sm" Tooltip="Like" Bind="liked0"
+                          Color="{liked0 ? 'accent' : 'textMuted'}" OnClicked="like:0"/>
+              <Text Size="13" Color="textSecondary" Width="44" Align="right" Tabular="true">3:42</Text>
+            </Row>
+          </Hover>
+
+          <Hover Height="56" Selected="{playing == 1}" OnClicked="play:1">
+            <Row Width="fill" Height="fill" PadX="14" Gap="14" Align="center">
+              <Eq If="playing == 1 &amp;&amp; !paused" Size="18x16"/>
+              <Text If="!(playing == 1 &amp;&amp; !paused)" Size="13" Width="18" Align="center"
+                    Color="{playing == 1 ? 'accent' : 'textMuted'}">2</Text>
+              <Row Gap="12" Width="fill" Align="center">
+                <Cover Art="1" Size="40" Radius="8"/>
+                <Column Gap="1" Width="fill">
+                  <Text Font="medium" Nowrap="true" Color="{playing == 1 ? 'accent' : 'text'}">Static Bloom</Text>
+                  <Text Size="13" Color="textSecondary" Nowrap="true">Velvet Circuit</Text>
+                </Column>
+              </Row>
+              <Text Size="13" Color="textSecondary" Width="180" Nowrap="true">Soft Machines</Text>
+              <IconButton Icon="heart" Size="sm" Tooltip="Like" Bind="liked1"
+                          Color="{liked1 ? 'accent' : 'textMuted'}" OnClicked="like:1"/>
+              <Text Size="13" Color="textSecondary" Width="44" Align="right" Tabular="true">4:07</Text>
+            </Row>
+          </Hover>
+
+          <Hover Height="56" Selected="{playing == 2}" OnClicked="play:2">
+            <Row Width="fill" Height="fill" PadX="14" Gap="14" Align="center">
+              <Eq If="playing == 2 &amp;&amp; !paused" Size="18x16"/>
+              <Text If="!(playing == 2 &amp;&amp; !paused)" Size="13" Width="18" Align="center"
+                    Color="{playing == 2 ? 'accent' : 'textMuted'}">3</Text>
+              <Row Gap="12" Width="fill" Align="center">
+                <Cover Art="2" Size="40" Radius="8"/>
+                <Column Gap="1" Width="fill">
+                  <Text Font="medium" Nowrap="true" Color="{playing == 2 ? 'accent' : 'text'}">Low Orbit</Text>
+                  <Text Size="13" Color="textSecondary" Nowrap="true">Kaito Mori</Text>
+                </Column>
+              </Row>
+              <Text Size="13" Color="textSecondary" Width="180" Nowrap="true">Satellites</Text>
+              <IconButton Icon="heart" Size="sm" Tooltip="Like" Bind="liked2"
+                          Color="{liked2 ? 'accent' : 'textMuted'}" OnClicked="like:2"/>
+              <Text Size="13" Color="textSecondary" Width="44" Align="right" Tabular="true">3:18</Text>
+            </Row>
+          </Hover>
+
+          <Hover Height="56" Selected="{playing == 3}" OnClicked="play:3">
+            <Row Width="fill" Height="fill" PadX="14" Gap="14" Align="center">
+              <Eq If="playing == 3 &amp;&amp; !paused" Size="18x16"/>
+              <Text If="!(playing == 3 &amp;&amp; !paused)" Size="13" Width="18" Align="center"
+                    Color="{playing == 3 ? 'accent' : 'textMuted'}">4</Text>
+              <Row Gap="12" Width="fill" Align="center">
+                <Cover Art="3" Size="40" Radius="8"/>
+                <Column Gap="1" Width="fill">
+                  <Text Font="medium" Nowrap="true" Color="{playing == 3 ? 'accent' : 'text'}">Paper Lanterns</Text>
+                  <Text Size="13" Color="textSecondary" Nowrap="true">The Quiet Hours</Text>
+                </Column>
+              </Row>
+              <Text Size="13" Color="textSecondary" Width="180" Nowrap="true">Ember</Text>
+              <IconButton Icon="heart" Size="sm" Tooltip="Like" Bind="liked3"
+                          Color="{liked3 ? 'accent' : 'textMuted'}" OnClicked="like:3"/>
+              <Text Size="13" Color="textSecondary" Width="44" Align="right" Tabular="true">4:23</Text>
+            </Row>
+          </Hover>
+
+          <Hover Height="56" Selected="{playing == 4}" OnClicked="play:4">
+            <Row Width="fill" Height="fill" PadX="14" Gap="14" Align="center">
+              <Eq If="playing == 4 &amp;&amp; !paused" Size="18x16"/>
+              <Text If="!(playing == 4 &amp;&amp; !paused)" Size="13" Width="18" Align="center"
+                    Color="{playing == 4 ? 'accent' : 'textMuted'}">5</Text>
+              <Row Gap="12" Width="fill" Align="center">
+                <Cover Art="4" Size="40" Radius="8"/>
+                <Column Gap="1" Width="fill">
+                  <Text Font="medium" Nowrap="true" Color="{playing == 4 ? 'accent' : 'text'}">Glass Harbor</Text>
+                  <Text Size="13" Color="textSecondary" Nowrap="true">Ilse Varga</Text>
+                </Column>
+              </Row>
+              <Text Size="13" Color="textSecondary" Width="180" Nowrap="true">Tidal</Text>
+              <IconButton Icon="heart" Size="sm" Tooltip="Like" Bind="liked4"
+                          Color="{liked4 ? 'accent' : 'textMuted'}" OnClicked="like:4"/>
+              <Text Size="13" Color="textSecondary" Width="44" Align="right" Tabular="true">3:51</Text>
+            </Row>
+          </Hover>
+
+          <Hover Height="56" Selected="{playing == 5}" OnClicked="play:5">
+            <Row Width="fill" Height="fill" PadX="14" Gap="14" Align="center">
+              <Eq If="playing == 5 &amp;&amp; !paused" Size="18x16"/>
+              <Text If="!(playing == 5 &amp;&amp; !paused)" Size="13" Width="18" Align="center"
+                    Color="{playing == 5 ? 'accent' : 'textMuted'}">6</Text>
+              <Row Gap="12" Width="fill" Align="center">
+                <Cover Art="0" Size="40" Radius="8"/>
+                <Column Gap="1" Width="fill">
+                  <Text Font="medium" Nowrap="true" Color="{playing == 5 ? 'accent' : 'text'}">After Hours</Text>
+                  <Text Size="13" Color="textSecondary" Nowrap="true">Hollis &amp; Grey</Text>
+                </Column>
+              </Row>
+              <Text Size="13" Color="textSecondary" Width="180" Nowrap="true">Night Shift</Text>
+              <IconButton Icon="heart" Size="sm" Tooltip="Like" Bind="liked5"
+                          Color="{liked5 ? 'accent' : 'textMuted'}" OnClicked="like:5"/>
+              <Text Size="13" Color="textSecondary" Width="44" Align="right" Tabular="true">3:34</Text>
+            </Row>
+          </Hover>
+
+          <Hover Height="56" Selected="{playing == 6}" OnClicked="play:6">
+            <Row Width="fill" Height="fill" PadX="14" Gap="14" Align="center">
+              <Eq If="playing == 6 &amp;&amp; !paused" Size="18x16"/>
+              <Text If="!(playing == 6 &amp;&amp; !paused)" Size="13" Width="18" Align="center"
+                    Color="{playing == 6 ? 'accent' : 'textMuted'}">7</Text>
+              <Row Gap="12" Width="fill" Align="center">
+                <Cover Art="5" Size="40" Radius="8"/>
+                <Column Gap="1" Width="fill">
+                  <Text Font="medium" Nowrap="true" Color="{playing == 6 ? 'accent' : 'text'}">Signal / Noise</Text>
+                  <Text Size="13" Color="textSecondary" Nowrap="true">Pale Static</Text>
+                </Column>
+              </Row>
+              <Text Size="13" Color="textSecondary" Width="180" Nowrap="true">Frequencies</Text>
+              <IconButton Icon="heart" Size="sm" Tooltip="Like" Bind="liked6"
+                          Color="{liked6 ? 'accent' : 'textMuted'}" OnClicked="like:6"/>
+              <Text Size="13" Color="textSecondary" Width="44" Align="right" Tabular="true">4:36</Text>
+            </Row>
+          </Hover>
+        </Column>
+
+        <!-- made for you -->
+        <Row Width="fill" Align="center">
+          <Text Font="display" Size="20" Width="fill">Made for you</Text>
+          <Button Text="Show all" Variant="ghost" Size="sm" IconRight="arrow-right"/>
+        </Row>
+        <Grid Columns="4" MinColumnWidth="160" Gap="16" Width="fill">
+          <Card Pad="12" Gap="10" Hoverable="true">
+            <Cover Art="2" Width="fill" Height="150" Radius="10"/>
+            <Column Gap="2" Width="fill">
+              <Text Font="medium" Nowrap="true">Daily Mix 1</Text>
+              <Text Size="12" Color="textSecondary" Nowrap="true">Hollis &amp; Grey, Kaito Mori and more</Text>
+            </Column>
+          </Card>
+          <Card Pad="12" Gap="10" Hoverable="true">
+            <Cover Art="3" Width="fill" Height="150" Radius="10"/>
+            <Column Gap="2" Width="fill">
+              <Text Font="medium" Nowrap="true">Focus Flow</Text>
+              <Text Size="12" Color="textSecondary" Nowrap="true">Instrumental, no lyrics</Text>
+            </Column>
+          </Card>
+          <Card Pad="12" Gap="10" Hoverable="true">
+            <Cover Art="4" Width="fill" Height="150" Radius="10"/>
+            <Column Gap="2" Width="fill">
+              <Text Font="medium" Nowrap="true">Discover Weekly</Text>
+              <Text Size="12" Color="textSecondary" Nowrap="true">New music picked for you</Text>
+            </Column>
+          </Card>
+          <Card Pad="12" Gap="10" Hoverable="true">
+            <Cover Art="5" Width="fill" Height="150" Radius="10"/>
+            <Column Gap="2" Width="fill">
+              <Text Font="medium" Nowrap="true">Release Radar</Text>
+              <Text Size="12" Color="textSecondary" Nowrap="true">Fresh from artists you follow</Text>
+            </Column>
+          </Card>
+        </Grid>
+
+      </Scroll>
+    </Column>
+  </Row>
+
+  <Separator/>
+
+  <!-- ========================== player bar ========================== -->
+  <Row Width="fill" Height="84" PadX="20" Gap="24" Align="center" Background="surface">
+    <Row Width="300" Gap="12" Align="center">
+      <Cover Art="{now.art}" Size="52" Radius="10"/>
+      <Column Gap="2" Width="fill">
+        <Text Font="medium" Nowrap="true" Text="{now.title}"/>
+        <Text Size="12" Color="textSecondary" Nowrap="true" Text="{now.artist}"/>
+      </Column>
+      <IconButton Icon="heart" Size="sm" Tooltip="Like" Color="{likedNow ? 'accent' : 'textMuted'}"
+                  OnClicked="like-now"/>
+    </Row>
+
+    <Column Width="fill" Gap="6" Align="center">
+      <Row Gap="10" Align="center">
+        <IconButton Icon="shuffle" Size="sm" Selected="{shuffle}" Tooltip="Shuffle"
+                    Color="{shuffle ? 'accent' : 'transparent'}" OnClicked="toggle:shuffle"/>
+        <IconButton Icon="skip-back" Tooltip="Previous" OnClicked="prev"/>
+        <IconButton Icon="{paused ? 'play' : 'pause'}" Variant="primary" Size="lg" OnClicked="toggle:paused"/>
+        <IconButton Icon="skip-forward" Tooltip="Next" OnClicked="next"/>
+        <IconButton Icon="repeat" Size="sm" Tooltip="Repeat"/>
+      </Row>
+      <Row Width="fill" Gap="12" Align="center">
+        <Text Size="12" Color="textMuted" Width="36" Align="right" Tabular="true" Text="{now.pos}"/>
+        <Slider Name="position" Text="##position" Min="0" Max="{now.len}" Bind="position" Width="fill"
+                ShowValue="false"/>
+        <Text Size="12" Color="textMuted" Width="36" Tabular="true" Text="{now.lenText}"/>
+      </Row>
+    </Column>
+
+    <Row Width="300" Height="30" Gap="8" Align="center" Justify="end">
+      <IconButton Icon="mic" Size="sm" Tooltip="Lyrics"/>
+      <IconButton Icon="list" Size="sm" Tooltip="Queue"/>
+      <Icon Icon="{volume &gt; 0 ? 'volume-2' : 'volume-x'}" Size="16" Color="textSecondary"/>
+      <Slider Name="volume" Text="##volume" Min="0" Max="100" Bind="volume" Width="110"/>
+    </Row>
+  </Row>
+
+</Window>

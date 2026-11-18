@@ -33,6 +33,7 @@
 CUI is an immediate-mode UI library written in C99. You describe the screen with function calls every frame. CUI lays it out, handles the mouse and keyboard, and draws it with OpenGL or its own software renderer, in a window on Windows, macOS or Linux, or in a browser through WebAssembly.
 
 - **About 210 components**, from buttons and text fields to a data grid, charts, a code editor and docking panels.
+- **Interfaces can also be written in XML**: a window, or one panel, loaded from a file with bindings, actions, hot reload and tags of your own. See [XML interfaces](docs/xml.md).
 - **No dependencies.** One CMake target, or two files (`cui.h` and `cui.c`) dropped into your project.
 - **Small.** A complete app, window, fonts and all, is about 250 KB. There is no browser or runtime inside.
 - **MIT licensed.**
