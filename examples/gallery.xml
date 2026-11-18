@@ -1,0 +1,833 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The component gallery of examples/gallery_ui.c, described in a file.
+
+  The pages are the same nine the C gallery has (and the extended pages of
+  gallery_more.c in its sidebar); one page is drawn at a time, chosen by the
+  bound value `page`, so this document is the whole window.
+
+  examples/gallery_xml_ui.c binds the values (the text fields, the switches,
+  the page, the theme and the accent), paints the accent swatches (<Swatch>),
+  and takes the actions named below. tests/xml_gallery_shots.c draws the same
+  page through the C gallery and through this document and counts the pixels
+  that differ.
+-->
+<Window Title="CUI Gallery" Width="1240" Height="1000">
+
+  <Row Width="fill" FillV="1" Align="stretch" Background="background">
+
+    <!-- ============================= sidebar ============================= -->
+    <Column Width="240" FillV="1" Pad="12" Gap="2" Background="surfaceMuted">
+      <Row Gap="10" PadX="8" PadTop="6" PadBottom="18">
+        <Box Width="28" Height="28" Radius="9" Background="foreground" Direction="stack"
+             Align="center" Justify="center">
+          <Text Font="display" Size="16" Color="background" LineHeight="1">C</Text>
+        </Box>
+        <Text Font="medium" Size="15" Nowrap="true">CUI</Text>
+        <Spacer/>
+        <Badge Size="sm">{version}</Badge>
+      </Row>
+
+      <Scroll Name="nav" FillV="1" Gap="2">
+        <NavSection Text="Components"/>
+        <NavItem Text="Overview" Icon="layout-dashboard" Group="pages" Selected="{page == 0}" OnClicked="page:0"/>
+        <NavItem Text="Buttons" Icon="zap" Group="pages" Selected="{page == 1}" OnClicked="page:1"/>
+        <NavItem Text="Inputs" Icon="type" Group="pages" Selected="{page == 2}" OnClicked="page:2"/>
+        <NavItem Text="Selection" Icon="sliders-horizontal" Group="pages" Selected="{page == 3}" OnClicked="page:3"/>
+        <NavItem Text="Navigation" Icon="compass" Group="pages" Selected="{page == 4}" OnClicked="page:4"/>
+        <NavItem Text="Overlays" Icon="layers" Group="pages" Selected="{page == 5}" OnClicked="page:5"/>
+        <NavItem Text="Feedback" Icon="bell" Group="pages" Selected="{page == 6}" OnClicked="page:6"/>
+        <NavItem Text="Data display" Icon="database" Group="pages" Selected="{page == 7}" OnClicked="page:7"/>
+        <NavItem Text="Charts" Icon="chart-line" Group="pages" Selected="{page == 8}" OnClicked="page:8"/>
+        <Gap Size="10"/>
+        <NavSection Text="Extended"/>
+        <NavItem Text="Actions" Icon="command" Group="pages" Selected="{page == 9}" OnClicked="page:9"/>
+        <NavItem Text="Smart inputs" Icon="square-pen" Group="pages" Selected="{page == 10}" OnClicked="page:10"/>
+        <NavItem Text="Pickers" Icon="calendar" Group="pages" Selected="{page == 11}" OnClicked="page:11"/>
+        <NavItem Text="Capture" Icon="upload" Group="pages" Selected="{page == 12}" OnClicked="page:12"/>
+        <NavItem Text="Disclosure" Icon="layers" Group="pages" Selected="{page == 13}" OnClicked="page:13"/>
+        <NavItem Text="Reader" Icon="file-text" Group="pages" Selected="{page == 14}" OnClicked="page:14"/>
+        <NavItem Text="Data grid" Icon="grid-3x3" Group="pages" Selected="{page == 15}" OnClicked="page:15"/>
+        <NavItem Text="Code" Icon="code" Group="pages" Selected="{page == 16}" OnClicked="page:16"/>
+        <NavItem Text="Social and media" Icon="message-square" Group="pages" Selected="{page == 17}" OnClicked="page:17"/>
+        <NavItem Text="Planning" Icon="list-checks" Group="pages" Selected="{page == 18}" OnClicked="page:18"/>
+        <NavItem Text="More charts" Icon="chart-pie" Group="pages" Selected="{page == 19}" OnClicked="page:19"/>
+        <NavItem Text="Motion" Icon="activity" Group="pages" Selected="{page == 20}" OnClicked="page:20"/>
+        <NavItem Text="AI" Icon="message-square" Group="pages" Selected="{page == 21}" OnClicked="page:21"/>
+        <NavItem Text="Audio" Icon="audio-lines" Group="pages" Selected="{page == 22}" OnClicked="page:22"/>
+        <NavItem Text="Files" Icon="folder" Group="pages" Selected="{page == 23}" OnClicked="page:23"/>
+        <NavItem Text="Developer tools" Icon="square-terminal" Group="pages" Selected="{page == 24}" OnClicked="page:24"/>
+        <NavItem Text="More developer tools" Icon="bug" Group="pages" Selected="{page == 25}" OnClicked="page:25"/>
+        <NavItem Text="Instruments" Icon="chart-line" Group="pages" Selected="{page == 26}" OnClicked="page:26"/>
+        <NavItem Text="Creative controls" Icon="palette" Group="pages" Selected="{page == 27}" OnClicked="page:27"/>
+        <NavItem Text="Canvas and bars" Icon="layers" Group="pages" Selected="{page == 28}" OnClicked="page:28"/>
+        <NavItem Text="Voice" Icon="mic" Group="pages" Selected="{page == 29}" OnClicked="page:29"/>
+      </Scroll>
+
+      <Column Gap="12" Pad="8">
+        <Segmented Name="theme" Items="Light|Dark" Icons="sun|moon" FullWidth="true" Size="sm"
+                   Bind="mode" OnChanged="theme.sync"/>
+        <Row Justify="between">
+          <Swatch Name="accent-0" Index="0" Selected="{accent == 0}"/>
+          <Swatch Name="accent-1" Index="1" Selected="{accent == 1}"/>
+          <Swatch Name="accent-2" Index="2" Selected="{accent == 2}"/>
+          <Swatch Name="accent-3" Index="3" Selected="{accent == 3}"/>
+          <Swatch Name="accent-4" Index="4" Selected="{accent == 4}"/>
+          <Swatch Name="accent-5" Index="5" Selected="{accent == 5}"/>
+          <Swatch Name="accent-6" Index="6" Selected="{accent == 6}"/>
+          <Swatch Name="accent-7" Index="7" Selected="{accent == 7}"/>
+        </Row>
+      </Column>
+    </Column>
+
+    <Separator/>
+
+    <!-- ============================== pages ============================== -->
+    <Scroll Name="main" Width="fill" Fade="true">
+      <Row Justify="center" Align="start">
+        <Column Width="fill" MaxWidth="920" PadX="40" PadTop="36" PadBottom="64" Gap="20">
+
+          <Column Gap="6" PadBottom="8" If="page != 0">
+            <Heading Level="2">{pageTitle}</Heading>
+          </Column>
+
+          <!-- ============================ overview ============================ -->
+          <Column Gap="14" PadBottom="8" If="page == 0">
+            <Heading Level="1">Components for C</Heading>
+            <Text Color="textSecondary" Size="15">Forms, tables, charts, planning boards and chat pieces that draw themselves the same way on Windows, macOS and Linux. Every one works from the keyboard.</Text>
+            <Row Gap="8" PadTop="6" Wrap="true">
+              <Button Text="Browse components" Variant="primary" IconRight="arrow-right" OnClicked="page:1"/>
+              <Button Text="Open command palette" Variant="outline" Icon="command"/>
+            </Row>
+          </Column>
+          <Box Direction="grid" Columns="3" MinColumnWidth="200" Gap="16" If="page == 0">
+            <Metric Label="Components" Value="150" Icon="box"/>
+            <Metric Label="Frame time" Value="0.4 ms" Delta="-18" DeltaLabel="-18% vs v0.9"
+                    LowerIsBetter="true" Values="9,7,8,6,5,6,4,4,3" Icon="zap"/>
+            <Metric Label="Dependencies" Value="0" Icon="package"/>
+          </Box>
+          <Box Direction="grid" Columns="2" MinColumnWidth="260" Gap="16" If="page == 0">
+            <Card Gap="16">
+              <Column Gap="4">
+                <Heading Level="4">Create a workspace</Heading>
+                <Secondary>You can invite people once it exists.</Secondary>
+              </Column>
+              <Input Name="ov-name" Bind="name" Label="Name" Placeholder="Your name"/>
+              <Input Name="ov-email" Bind="email" Label="Email" Icon="mail" Placeholder="you@company.com"/>
+              <Checkbox Text="Email me a weekly summary" Bind="terms"/>
+              <Button Text="Create workspace" Variant="primary" FullWidth="true" OnClicked="toast:workspace"/>
+            </Card>
+            <Card Gap="12">
+              <Row>
+                <Column Gap="4" Width="fill">
+                  <Heading Level="4">Team</Heading>
+                  <Secondary>Four people, one owner.</Secondary>
+                </Column>
+                <Button Text="Invite" Icon="user-plus" Size="sm"/>
+              </Row>
+              <Row Gap="12" PadY="4">
+                <Avatar Size="34" Status="online">Jonas Berg</Avatar>
+                <Column Width="fill" Gap="1">
+                  <Text Font="medium" Nowrap="true">Jonas Berg</Text>
+                  <Text Size="12" Color="textSecondary" Nowrap="true">jonas@northlight.io</Text>
+                </Column>
+                <Badge Tone="accent">Owner</Badge>
+              </Row>
+              <Row Gap="12" PadY="4">
+                <Avatar Size="34" Status="away">Priya Nair</Avatar>
+                <Column Width="fill" Gap="1">
+                  <Text Font="medium" Nowrap="true">Priya Nair</Text>
+                  <Text Size="12" Color="textSecondary" Nowrap="true">priya@harbor.dev</Text>
+                </Column>
+                <Badge>Admin</Badge>
+              </Row>
+              <Row Gap="12" PadY="4">
+                <Avatar Size="34">Tomas Rivera</Avatar>
+                <Column Width="fill" Gap="1">
+                  <Text Font="medium" Nowrap="true">Tomas Rivera</Text>
+                  <Text Size="12" Color="textSecondary" Nowrap="true">tomas@kiln.app</Text>
+                </Column>
+                <Badge>Editor</Badge>
+              </Row>
+              <Row Gap="12" PadY="4">
+                <Avatar Size="34">Lena Fischer</Avatar>
+                <Column Width="fill" Gap="1">
+                  <Text Font="medium" Nowrap="true">Lena Fischer</Text>
+                  <Text Size="12" Color="textSecondary" Nowrap="true">lena@fischer.dev</Text>
+                </Column>
+                <Badge>Viewer</Badge>
+              </Row>
+            </Card>
+          </Box>
+
+          <!-- ============================= buttons ============================ -->
+          <Column Gap="4" PadTop="18" If="page == 1">
+            <Heading Level="4">Variants</Heading>
+            <Secondary>One primary action per view. Secondary for everything else.</Secondary>
+          </Column>
+          <Card If="page == 1">
+            <Row Gap="8" Wrap="true">
+              <Button Text="Primary" Variant="primary"/>
+              <Button Text="Secondary"/>
+              <Button Text="Outline" Variant="outline"/>
+              <Button Text="Ghost" Variant="ghost"/>
+              <Button Text="Danger" Variant="danger"/>
+              <Button Text="Link" Variant="link"/>
+            </Row>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 1">
+            <Heading Level="4">Sizes and icons</Heading>
+          </Column>
+          <Card Gap="16" If="page == 1">
+            <Row Gap="8" Wrap="true">
+              <Button Text="Small" Size="sm"/>
+              <Button Text="Medium"/>
+              <Button Text="Large" Size="lg"/>
+            </Row>
+            <Row Gap="8" Wrap="true">
+              <Button Text="New project" Variant="primary" Icon="plus"/>
+              <Button Text="Download" Icon="download"/>
+              <Button Text="Continue" Variant="outline" IconRight="arrow-right"/>
+              <IconButton Icon="copy" Tooltip="Copy" Shortcut="Ctrl C"/>
+              <IconButton Icon="share-2" Tooltip="Share"/>
+              <IconButton Icon="heart" Tooltip="Like" Variant="outline"/>
+              <IconButton Icon="trash-2" Tooltip="Delete" Variant="secondary"/>
+            </Row>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 1">
+            <Heading Level="4">States</Heading>
+            <Secondary>Loading keeps the label so the layout does not jump.</Secondary>
+          </Column>
+          <Card If="page == 1">
+            <Row Gap="8" Wrap="true">
+              <Button Text="{loading ? 'Saving' : 'Save changes'}" Variant="primary" Loading="{loading}"
+                      OnClicked="loading:on"/>
+              <Button Text="Reset##loading" OnClicked="loading:off"/>
+              <Button Text="Disabled" Disabled="true"/>
+              <Button Text="Selected" Variant="ghost" Selected="true" Icon="check"/>
+            </Row>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 1">
+            <Heading Level="4">Groups, copy and hold to confirm</Heading>
+            <Secondary>Hold the button until it fills to confirm a destructive action.</Secondary>
+          </Column>
+          <Card If="page == 1">
+            <Row Gap="12" Wrap="true">
+              <ButtonGroup>
+                <Button Text="Bold##group" Icon="bold"/>
+                <Button Text="Italic##group" Icon="italic"/>
+                <Button Text="Underline##group" Icon="underline"/>
+              </ButtonGroup>
+              <Row Gap="6" Background="surfaceMuted" Radius="18" PadLeft="14" PadRight="4" PadY="2">
+                <Text Font="mono" Nowrap="true">npm i cui</Text>
+                <CopyButton Name="install" Text="npm i cui"/>
+              </Row>
+              <HoldButton Text="Hold to delete" Icon="trash-2" OnClicked="toast:deleted"/>
+            </Row>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 1">
+            <Heading Level="4">Segmented control</Heading>
+            <Secondary>A highlight glides to the selected option.</Secondary>
+          </Column>
+          <Card Gap="16" If="page == 1">
+            <Segmented Name="view" Items="List|Board|Timeline" Icons="list|layout-dashboard|history" Bind="seg_view"/>
+            <Segmented Name="range" Items="Day|Week|Month|Year" Size="sm" Bind="seg_size"/>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 1">
+            <Heading Level="4">Dropdown menu</Heading>
+          </Column>
+          <Card If="page == 1">
+            <Row Gap="8" Wrap="true">
+              <Menu Text="Options" Icon="settings">
+                <MenuLabel Text="Project"/>
+                <MenuItem Text="Rename" Icon="pencil" Shortcut="F2"/>
+                <MenuItem Text="Duplicate" Icon="copy" Shortcut="Ctrl D"/>
+                <MenuItem Text="Share" Icon="share-2"/>
+                <MenuSeparator/>
+                <MenuItem Text="Delete" Icon="trash-2" Danger="true" OnClicked="confirm:open"/>
+              </Menu>
+              <Menu Text="More actions" IconOnly="true" Icon="ellipsis">
+                <MenuItem Text="Archive" Icon="archive"/>
+                <MenuItem Text="Export" Icon="download"/>
+              </Menu>
+            </Row>
+          </Card>
+
+          <!-- ============================== inputs ============================ -->
+          <Column Gap="4" PadTop="18" If="page == 2">
+            <Heading Level="4">Text fields</Heading>
+            <Secondary>Labels above, hints and errors below.</Secondary>
+          </Column>
+          <Card Gap="16" If="page == 2">
+            <Box Direction="grid" Columns="2" MinColumnWidth="260" Gap="16">
+              <Input Name="name" Bind="name" Label="Full name" Placeholder="Maya Okafor"/>
+              <Input Name="email" Bind="email" Label="Email" Icon="at-sign" Hint="We never share your email."/>
+              <Input Name="password" Bind="password" Label="Password" Password="true"
+                     Placeholder="At least 8 characters"
+                     Error="{len(password) &gt; 0 &amp;&amp; len(password) &lt; 8 ? 'Use 8 or more characters.' : ''}"/>
+              <Search Name="search" Bind="search" Label="Search" Placeholder="Search projects"/>
+            </Box>
+            <Textarea Name="bio" Bind="bio" Label="About" Height="96" Hint="Markdown is supported."/>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 2">
+            <Heading Level="4">Tags, codes and password strength</Heading>
+          </Column>
+          <Card Gap="16" If="page == 2">
+            <TagInput Name="tags" Bind="tags" Label="Topics" Placeholder="Add a topic"/>
+            <Column Gap="8">
+              <Label Text="Verification code"/>
+              <Otp Name="otp" Bind="otp" Length="6"/>
+            </Column>
+            <Column Gap="8">
+              <Input Name="new-pw" Bind="password" Label="New password" Password="true"
+                     Placeholder="Try a long passphrase"/>
+              <PasswordStrength Name="strength" Bind="password"/>
+            </Column>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 2">
+            <Heading Level="4">Pickers</Heading>
+          </Column>
+          <Card Gap="16" If="page == 2">
+            <Box Direction="grid" Columns="2" MinColumnWidth="260" Gap="16">
+              <Select Name="country" Bind="country" Label="Country"
+                      Items="Canada|Denmark|Germany|Iran|Japan|Kenya|Netherlands|Portugal|United States"/>
+              <Select Name="framework" Bind="framework" Label="Language" Searchable="true"
+                      Placeholder="Pick a language"
+                      Items="C99|C11|C17|C23|C++17|Objective-C|Zig|Odin|Rust"/>
+              <DatePicker Name="due" Label="Due date" Year="2026" Month="11" Day="14"/>
+              <Number Name="qty" Label="Seats" Min="0" Max="99" Value="3" Width="fill"/>
+            </Box>
+            <Column Gap="6">
+              <Label Text="Brand color"/>
+              <ColorPicker Name="brand" Value="#7747ff"/>
+            </Column>
+          </Card>
+
+          <!-- ============================ selection =========================== -->
+          <Box Direction="grid" Columns="2" MinColumnWidth="260" Gap="16" If="page == 3">
+            <Column Gap="12">
+              <Column Gap="4" PadTop="18">
+                <Heading Level="4">Checkbox</Heading>
+              </Column>
+              <Card Gap="14">
+                <Checkbox Text="Email notifications" Bind="newsletter"
+                          Description="Product news, at most once a month."/>
+                <Checkbox Text="Marketing" Bind="marketing" Description="Offers from our partners."/>
+                <Checkbox Text="Disabled option" Bind="terms" Disabled="true"/>
+              </Card>
+            </Column>
+            <Column Gap="12">
+              <Column Gap="4" PadTop="18">
+                <Heading Level="4">Switch</Heading>
+              </Column>
+              <Card Gap="14">
+                <Switch Text="Wi-Fi" Bind="wifi"/>
+                <Switch Text="Bluetooth" Bind="bluetooth"/>
+                <Switch Text="Airplane mode" Bind="airplane" Description="Turns off all radios."/>
+              </Card>
+            </Column>
+          </Box>
+          <Column Gap="4" PadTop="18" If="page == 3">
+            <Heading Level="4">Radio group</Heading>
+          </Column>
+          <Card Gap="12" If="page == 3">
+            <RadioGroup Name="plan" Bind="plan">
+              <Radio Text="Every change" Description="Save as you type. Uses the most disk."/>
+              <Radio Text="Every 5 minutes" Description="A good balance for most projects."/>
+              <Radio Text="Only when I save" Description="Nothing is written until you press Ctrl S."/>
+            </RadioGroup>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 3">
+            <Heading Level="4">Radio cards</Heading>
+            <Secondary>For choices that need a sentence of explanation.</Secondary>
+          </Column>
+          <RadioCards Name="places" Bind="plan_card" If="page == 3">
+            <Choice Text="This computer" Icon="monitor"
+                    Description="Saved next to the project. Nothing leaves the machine."/>
+            <Choice Text="Team server" Icon="server" Badge="Default"
+                    Description="Synced to your company server every few minutes."/>
+            <Choice Text="Both" Icon="layers"
+                    Description="A local copy, uploaded to the server every night."/>
+          </RadioCards>
+          <Column Gap="4" PadTop="18" If="page == 3">
+            <Heading Level="4">Sliders</Heading>
+            <Secondary>Drag past either end: the track stretches like rubber.</Secondary>
+          </Column>
+          <Card Gap="20" If="page == 3">
+            <Slider Text="Volume" Value="64" Min="0" Max="100" ShowValue="true"/>
+            <Slider Text="Brightness" Value="40" Min="0" Max="100" Step="10" ShowValue="true" Format="%.0f%%"/>
+            <RangeSlider Text="Price range" Low="20" High="75" Min="0" Max="100"/>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 3">
+            <Heading Level="4">Chips and rating</Heading>
+          </Column>
+          <Card Gap="16" If="page == 3">
+            <Row Gap="8" Wrap="true">
+              <Chip Text="Design" Bind="chip0"/>
+              <Chip Text="Engineering" Bind="chip1"/>
+              <Chip Text="Marketing" Bind="chip2"/>
+              <Chip Text="Sales" Bind="chip3"/>
+              <Chip Text="Support" Bind="chip4"/>
+              <Chip Text="Finance" Bind="chip5"/>
+            </Row>
+            <Rating Name="rating" Bind="rating" Max="5"/>
+          </Card>
+
+          <!-- =========================== navigation =========================== -->
+          <Column Gap="4" PadTop="18" If="page == 4">
+            <Heading Level="4">Tabs</Heading>
+            <Secondary>The indicator slides to the active tab.</Secondary>
+          </Column>
+          <Card Gap="16" If="page == 4">
+            <Tabs Name="tabs" Items="Overview|Analytics|Reports|Settings" Bind="tab"/>
+            <Column Gap="6" PadY="4">
+              <Label Text="{tab == 0 ? 'Overview' : tab == 1 ? 'Analytics' : tab == 2 ? 'Reports' : 'Settings'}"/>
+              <Secondary>Tabs switch between views of the same thing. Content changes in place.</Secondary>
+            </Column>
+            <Tabs Name="tabs2" Items="Account|Password|Billing" Icons="user|lock|credit-card"
+                  Variant="pill" Bind="tab2"/>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 4">
+            <Heading Level="4">Breadcrumb and pagination</Heading>
+          </Column>
+          <Card Gap="18" If="page == 4">
+            <Breadcrumb Items="Home|Projects|CUI|Settings"/>
+            <Pagination Name="pages" Bind="page_index" PageCount="12"/>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 4">
+            <Heading Level="4">Stepper</Heading>
+          </Column>
+          <Card Gap="18" If="page == 4">
+            <Stepper Items="Account|Workspace|Invite team|Done" Current="{step}"/>
+            <Row Gap="8" Wrap="true">
+              <Button Text="Back" Disabled="{step == 0}" OnClicked="step:back"/>
+              <Button Text="{step &gt;= 3 ? 'Finish' : 'Next'}" Variant="primary" IconRight="arrow-right"
+                      OnClicked="step:next"/>
+            </Row>
+          </Card>
+
+          <!-- ============================= overlays =========================== -->
+          <Column Gap="4" PadTop="18" If="page == 5">
+            <Heading Level="4">Dialogs and sheets</Heading>
+            <Secondary>Esc or a click outside closes them. Focus stays inside.</Secondary>
+          </Column>
+          <Card If="page == 5">
+            <Row Gap="8" Wrap="true">
+              <Button Text="Edit profile" Icon="pencil" OnClicked="dialog:profile"/>
+              <Button Text="Open sheet" Icon="panel-left" OnClicked="sheet:notifications"/>
+              <Button Text="Delete project" Variant="danger" Icon="trash-2" OnClicked="dialog:delete"/>
+              <Button Text="Command palette" Variant="outline" Icon="command" Tooltip="Search everything"
+                      Shortcut="Ctrl K" OnClicked="palette:open"/>
+            </Row>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 5">
+            <Heading Level="4">Popover and context menu</Heading>
+          </Column>
+          <Card Gap="16" If="page == 5">
+            <Row Gap="8" Wrap="true">
+              <Button Text="Filters" Icon="filter" OnClicked="popover:filters"/>
+              <Popover Name="filters" Width="280">
+                <Label Text="Filter results"/>
+                <Checkbox Text="Only active" Bind="newsletter"/>
+                <Checkbox Text="Include archived" Bind="marketing"/>
+                <Slider Text="Minimum score" Value="40" Min="0" Max="100" ShowValue="true"/>
+                <Row Gap="8" Justify="end">
+                  <Button Text="Apply" Variant="primary" Size="sm" OnClicked="popover:filters"/>
+                </Row>
+              </Popover>
+            </Row>
+            <Card Name="ctx-area" Muted="true" Pad="28" Align="center" Hoverable="true">
+              <Icon Icon="ellipsis" Size="18" Color="textMuted"/>
+              <Text Color="textSecondary" Align="center">Right click this area</Text>
+            </Card>
+            <ContextMenu Name="ctx">
+              <MenuItem Text="Cut" Icon="scissors" Shortcut="Ctrl X"/>
+              <MenuItem Text="Copy" Icon="copy" Shortcut="Ctrl C"/>
+              <MenuItem Text="Paste" Icon="clipboard" Shortcut="Ctrl V"/>
+              <MenuSeparator/>
+              <MenuItem Text="Delete" Icon="trash-2" Danger="true"/>
+            </ContextMenu>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 5">
+            <Heading Level="4">Toasts</Heading>
+            <Secondary>They stack, expand on hover and pause while you read.</Secondary>
+          </Column>
+          <Card If="page == 5">
+            <Row Gap="8" Wrap="true">
+              <Button Text="Save profile" OnClicked="toast:saved"/>
+              <Button Text="Upload a 30 MB file" OnClicked="toast:failed"/>
+              <Button Text="Archive a message" OnClicked="toast:archived"/>
+              <Button Text="Check for updates" OnClicked="toast:update"/>
+            </Row>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 5">
+            <Heading Level="4">Tooltips</Heading>
+          </Column>
+          <Card If="page == 5">
+            <Row Gap="4" Wrap="true">
+              <IconButton Icon="bold" Tooltip="Bold" Shortcut="Ctrl B"/>
+              <IconButton Icon="italic" Tooltip="Italic" Shortcut="Ctrl I"/>
+              <IconButton Icon="underline" Tooltip="Underline" Shortcut="Ctrl U"/>
+              <Separator/>
+              <IconButton Icon="align-left" Tooltip="Align left"/>
+              <IconButton Icon="list" Tooltip="Bulleted list"/>
+              <IconButton Icon="link" Tooltip="Insert link"/>
+            </Row>
+          </Card>
+
+          <!-- ============================= feedback =========================== -->
+          <Column Gap="4" PadTop="18" If="page == 6">
+            <Heading Level="4">Alerts</Heading>
+            <Secondary>Color only when something succeeded, needs attention or failed.</Secondary>
+          </Column>
+          <Column Gap="10" If="page == 6">
+            <Alert Text="A new version is available" Tone="neutral" Description="Restart to update to 1.1."/>
+            <Alert Text="Payment received" Tone="success" Description="Your invoice was paid on November 5."/>
+            <Alert Text="Storage almost full" Tone="warning" Dismissible="true"
+                   Description="You have used 92% of your plan."/>
+            <Alert Text="Build failed" Tone="danger" Description="Missing symbol cui_frame in main.c line 42."/>
+          </Column>
+          <Box Direction="grid" Columns="2" MinColumnWidth="260" Gap="16" If="page == 6">
+            <Card Gap="18">
+              <Heading Level="4">Progress</Heading>
+              <Progress Value="0.68" Label="Uploading assets" ShowValue="true"/>
+              <Progress Value="0" Label="Indexing" Indeterminate="true"/>
+              <Progress Value="0.42" Label="Exporting clip.mp4" ShowValue="true" Dither="true"/>
+              <Progress Value="0" Label="Syncing library" Indeterminate="true" Dither="true"/>
+              <Meter Label="Storage" Used="18.4" Total="20" Unit="GB"/>
+              <Row Gap="16" Wrap="true">
+                <Spinner Size="16"/>
+                <Spinner Size="22"/>
+                <Spinner Size="28"/>
+              </Row>
+            </Card>
+            <Card Gap="14">
+              <Heading Level="4">Loading</Heading>
+              <Row Gap="12" Wrap="true">
+                <Skeleton Width="40" Height="40"/>
+                <Column Gap="8" Width="fill">
+                  <Skeleton Width="70%" Height="12"/>
+                  <Skeleton Width="45%" Height="12"/>
+                </Column>
+              </Row>
+              <Skeleton Width="fill" Height="88"/>
+              <Skeleton Width="90%" Height="12"/>
+              <Skeleton Width="60%" Height="12"/>
+              <SkeletonGroup Dither="true" Gap="10">
+                <Row Gap="12" Align="center" Width="fill">
+                  <Skeleton Width="32" Height="32"/>
+                  <Column Gap="8" Width="fill">
+                    <Skeleton Width="60%" Height="8"/>
+                    <Skeleton Width="40%" Height="8"/>
+                  </Column>
+                </Row>
+                <Skeleton Width="fill" Height="8"/>
+              </SkeletonGroup>
+            </Card>
+            <Card Gap="14">
+              <Heading Level="4">Dither spinners</Heading>
+              <Row Gap="20" Wrap="true" Align="center">
+                <Spinner Size="40" Style="comet"/>
+                <Spinner Size="40" Style="dotmatrix"/>
+                <Spinner Size="40" Style="filldrain"/>
+                <Spinner Size="40" Style="radar"/>
+                <Spinner Size="40" Style="ripple"/>
+                <Spinner Size="40" Style="transfer"/>
+                <Spinner Size="40" Style="orbit"/>
+                <Spinner Size="40" Style="bounce"/>
+                <Spinner Size="40" Style="scan"/>
+                <Spinner Size="40" Style="pulse"/>
+                <Spinner Size="40" Style="spiral"/>
+                <Spinner Size="40" Style="plasma"/>
+              </Row>
+              <Row Gap="10" Wrap="true" Align="center">
+                <Row Gap="8" Align="center" PadX="14" PadY="8" Radius="10" Background="foreground">
+                  <Spinner Size="14" Style="comet" Color="background"/>
+                  <Text Font="medium" Color="background">Saving&#8230;</Text>
+                </Row>
+                <Row Gap="8" Align="center" PadX="11" PadY="6" Radius="999" Border="1" Background="surface">
+                  <Spinner Size="14" Style="orbit"/>
+                  <Text Color="textSecondary">Syncing 24 files</Text>
+                </Row>
+                <Row Gap="8" Align="center" PadX="11" PadY="6" Radius="999" Border="1" Background="surface">
+                  <Spinner Size="14" Style="ripple"/>
+                  <Text Color="textSecondary">Connecting</Text>
+                </Row>
+              </Row>
+              <Row Gap="10" Align="center">
+                <Button Text="Upload" Size="sm" Disabled="{upload == 1}" OnClicked="upload:start"/>
+                <StatusSpinner Name="upload" Status="{upload == 1 ? 'busy' : upload == 2 ? 'success' : upload == 3 ? 'error' : 'idle'}"
+                               Size="18"/>
+                <Text Color="textSecondary">{upload == 1 ? 'Uploading' : upload == 2 ? 'Uploaded' : upload == 3 ? 'Upload failed' : ''}</Text>
+              </Row>
+            </Card>
+          </Box>
+          <Box Direction="grid" Columns="2" MinColumnWidth="260" Gap="16" If="page == 6">
+            <Card Gap="14">
+              <Heading Level="4">Activity</Heading>
+              <TimelineItem Text="Deployed to production" Time="2m ago" Icon="rocket" Tone="success"
+                            Description="Release 1.0.3 is live in all regions."/>
+              <TimelineItem Text="Review requested" Time="1h ago" Icon="message-square" Tone="info"
+                            Description="Jonas asked you to review the theming changes."/>
+              <TimelineItem Text="Build failed" Time="3h ago" Icon="circle-alert" Tone="danger" Last="true"/>
+            </Card>
+            <Card Gap="14">
+              <Heading Level="4">Goals</Heading>
+              <Row Gap="24" Justify="around">
+                <ProgressRing Text="Onboarding" Value="0.72" Size="104"/>
+                <ProgressRing Text="Quota" Value="0.35" Size="104"/>
+              </Row>
+            </Card>
+          </Box>
+          <Column Gap="4" PadTop="18" If="page == 6">
+            <Heading Level="4">Badges and avatars</Heading>
+          </Column>
+          <Card Gap="16" If="page == 6">
+            <Row Gap="8" Wrap="true">
+              <Badge Text="Draft"/>
+              <Badge Text="Recommended" Tone="accent"/>
+              <Badge Text="Active" Tone="success" Dot="true"/>
+              <Badge Text="Pending" Tone="warning" Dot="true"/>
+              <Badge Text="Overdue" Tone="danger" Dot="true"/>
+              <Badge Text="Beta" Tone="violet"/>
+              <Badge Text="New" Tone="info" Solid="true"/>
+            </Row>
+            <Row Gap="16" Wrap="true">
+              <Avatar Size="40" Status="online">Sam Whitfield</Avatar>
+              <Avatar Size="40" Status="busy">Daniel Mensah</Avatar>
+              <Avatar Size="40" Square="true">Rosa Delgado</Avatar>
+              <AvatarGroup Items="Kwame Asante|Hana Novak|Elif Kaya|Ben Carter|Omar Haddad|Felix Moreau|Iris Coleman"
+                           Max="4" Size="32"/>
+            </Row>
+          </Card>
+          <Card Pad="0" If="page == 6">
+            <EmptyState Text="No projects yet" Icon="folder-open" Action="New project"
+                        Description="A project holds your screens, their builds and who can see them."/>
+          </Card>
+
+          <!-- =============================== data ============================= -->
+          <Column Gap="4" PadTop="18" If="page == 7">
+            <Heading Level="4">Table</Heading>
+            <Secondary>Sortable columns, row selection and components in cells.</Secondary>
+          </Column>
+          <Table Name="people" Selectable="true" SortColumn="0" If="page == 7">
+            <TableColumn Text="Name" Width="fill" Sortable="true"/>
+            <TableColumn Text="Email" Width="1.2*"/>
+            <TableColumn Text="Role" Width="110" Sortable="true"/>
+            <TableColumn Text="Status" Width="120" Sortable="true"/>
+            <TableColumn Text="Revenue" Width="110" Align="right"/>
+            <!-- the rows in the order examples/gallery_ui.c sorts them: by name -->
+            <TableRow Selected="{selected_row == 4}" OnClicked="row:4">
+              <Cell>
+                <Avatar Size="26">Aiko Tanaka</Avatar>
+                <Text Font="medium" Nowrap="true">Aiko Tanaka</Text>
+              </Cell>
+              <Cell><Text Color="textSecondary" Nowrap="true">aiko@tanaka.design</Text></Cell>
+              <Cell Text="Editor"/>
+              <Cell><Badge Text="Suspended" Tone="danger" Dot="true"/></Cell>
+              <Cell Text="$1,962"/>
+            </TableRow>
+            <TableRow Selected="{selected_row == 0}" OnClicked="row:0">
+              <Cell>
+                <Avatar Size="26">Jonas Berg</Avatar>
+                <Text Font="medium" Nowrap="true">Jonas Berg</Text>
+              </Cell>
+              <Cell><Text Color="textSecondary" Nowrap="true">jonas@northlight.io</Text></Cell>
+              <Cell Text="Owner"/>
+              <Cell><Badge Text="Active" Tone="success" Dot="true"/></Cell>
+              <Cell Text="$12,384"/>
+            </TableRow>
+            <TableRow Selected="{selected_row == 3}" OnClicked="row:3">
+              <Cell>
+                <Avatar Size="26">Lena Fischer</Avatar>
+                <Text Font="medium" Nowrap="true">Lena Fischer</Text>
+              </Cell>
+              <Cell><Text Color="textSecondary" Nowrap="true">lena@fischer.dev</Text></Cell>
+              <Cell Text="Viewer"/>
+              <Cell><Badge Text="Active" Tone="success" Dot="true"/></Cell>
+              <Cell Text="$3,127"/>
+            </TableRow>
+            <TableRow Selected="{selected_row == 1}" OnClicked="row:1">
+              <Cell>
+                <Avatar Size="26">Priya Nair</Avatar>
+                <Text Font="medium" Nowrap="true">Priya Nair</Text>
+              </Cell>
+              <Cell><Text Color="textSecondary" Nowrap="true">priya@harbor.dev</Text></Cell>
+              <Cell Text="Admin"/>
+              <Cell><Badge Text="Active" Tone="success" Dot="true"/></Cell>
+              <Cell Text="$9,846"/>
+            </TableRow>
+            <TableRow Selected="{selected_row == 2}" OnClicked="row:2">
+              <Cell>
+                <Avatar Size="26">Tomas Rivera</Avatar>
+                <Text Font="medium" Nowrap="true">Tomas Rivera</Text>
+              </Cell>
+              <Cell><Text Color="textSecondary" Nowrap="true">tomas@kiln.app</Text></Cell>
+              <Cell Text="Editor"/>
+              <Cell><Badge Text="Invited" Tone="warning" Dot="true"/></Cell>
+              <Cell Text="$7,215"/>
+            </TableRow>
+          </Table>
+          <Box Direction="grid" Columns="2" MinColumnWidth="260" Gap="16" If="page == 7">
+            <Column Gap="12">
+              <Column Gap="4" PadTop="18">
+                <Heading Level="4">Tree view</Heading>
+              </Column>
+              <Card Pad="10" Gap="1">
+                <Tree Name="src" Text="src" Bind="tree_src" Open="true">
+                  <Tree Name="components" Text="components" Bind="tree_ui" Open="true">
+                    <Tree Text="button.c" Leaf="true" Selected="{selected_file == 0}" OnClicked="file:0"/>
+                    <Tree Text="dialog.c" Leaf="true" Selected="{selected_file == 1}" OnClicked="file:1"/>
+                    <Tree Text="slider.c" Leaf="true" Selected="{selected_file == 2}" OnClicked="file:2"/>
+                    <Tree Text="table.c" Leaf="true" Selected="{selected_file == 3}" OnClicked="file:3"/>
+                  </Tree>
+                  <Tree Name="assets" Text="assets" Bind="tree_assets" Open="false">
+                    <Tree Text="logo.png" Leaf="true" Icon="image"/>
+                  </Tree>
+                  <Tree Text="main.c" Leaf="true"/>
+                </Tree>
+              </Card>
+            </Column>
+            <Column Gap="12">
+              <Column Gap="4" PadTop="18">
+                <Heading Level="4">List</Heading>
+              </Column>
+              <Card Pad="8" Gap="2">
+                <ListItem Text="Design review" Avatar="Jonas Berg" Subtitle="Tomorrow at 10:00" Trailing="45m"/>
+                <ListItem Text="Release 1.0" Avatar="Priya Nair" Subtitle="Ship it" Trailing="2h" Selected="true"/>
+                <ListItem Text="Planning" Avatar="Tomas Rivera" Subtitle="Q1 roadmap" Trailing="1h"/>
+              </Card>
+            </Column>
+          </Box>
+          <Column Gap="4" PadTop="18" If="page == 7">
+            <Heading Level="4">Reorderable list</Heading>
+            <Secondary>Drag a row. The others make room as you go.</Secondary>
+          </Column>
+          <Reorder Name="tasks" OnChanged="toast:order" If="page == 7">
+            <ReorderItem>
+              <Text Width="fill" Nowrap="true">Write the release notes</Text>
+              <Badge Text="Docs" Tone="info"/>
+            </ReorderItem>
+            <ReorderItem>
+              <Text Width="fill" Nowrap="true">Record the demo video</Text>
+              <Badge Text="Video"/>
+            </ReorderItem>
+            <ReorderItem>
+              <Text Width="fill" Nowrap="true">Update the screenshots</Text>
+              <Badge Text="Docs" Tone="info"/>
+            </ReorderItem>
+            <ReorderItem>
+              <Text Width="fill" Nowrap="true">Tag version 1.0</Text>
+              <Badge Text="Release" Tone="warning"/>
+            </ReorderItem>
+            <ReorderItem>
+              <Text Width="fill" Nowrap="true">Post the announcement</Text>
+              <Badge Text="Blog" Tone="teal"/>
+            </ReorderItem>
+          </Reorder>
+          <Column Gap="4" PadTop="18" If="page == 7">
+            <Heading Level="4">Accordion</Heading>
+          </Column>
+          <Card PadY="4" Gap="0" If="page == 7">
+            <Accordion Text="Is it really dependency free?" Bind="acc0" Open="true">
+              <Secondary>Yes. The core is plain C99. Windows uses Win32, macOS uses Cocoa and Linux uses X11. Fonts and icons are embedded.</Secondary>
+            </Accordion>
+            <Accordion Text="Can I use my own renderer?" Bind="acc1">
+              <Secondary>CUI outputs vertices and draw commands. Port the 60 line shader to Vulkan, Metal or Direct3D and you are done.</Secondary>
+            </Accordion>
+            <Accordion Text="Does it respect reduced motion?" Bind="acc2">
+              <Secondary>Every animation has a reduced motion path that keeps the final state and feedback.</Secondary>
+            </Accordion>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 7">
+            <Heading Level="4">Virtual list</Heading>
+            <Secondary>Ten thousand rows. Only the visible ones are built.</Secondary>
+          </Column>
+          <Card Pad="6" If="page == 7">
+            <Invoices Name="big"/>
+          </Card>
+
+          <!-- ============================== charts ============================ -->
+          <Column Gap="4" PadTop="18" If="page == 8">
+            <Heading Level="4">Line chart</Heading>
+            <Secondary>Hover to inspect values. The crosshair glides between points.</Secondary>
+          </Column>
+          <Card If="page == 8">
+            <LineChart Name="revenue" Height="240" Area="true" Smooth="true" Format="$%.0fk"
+                       Labels="Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec">
+              <Series Text="Revenue" Values="18,22,21,27,31,29,36,41,39,46,52,58"/>
+              <Series Text="Costs" Values="12,13,15,14,18,19,21,22,24,25,27,29"/>
+            </LineChart>
+          </Card>
+          <Box Direction="grid" Columns="2" MinColumnWidth="260" Gap="16" If="page == 8">
+            <Column Gap="12">
+              <Column Gap="4" PadTop="18">
+                <Heading Level="4">Bar chart</Heading>
+              </Column>
+              <Card>
+                <BarChart Name="visits" Height="200" Labels="Jan|Feb|Mar|Apr|May|Jun">
+                  <Series Text="Desktop" Values="42,51,38,64,58,71"/>
+                  <Series Text="Mobile" Values="28,33,30,41,46,49"/>
+                </BarChart>
+              </Card>
+            </Column>
+            <Column Gap="12">
+              <Column Gap="4" PadTop="18">
+                <Heading Level="4">Donut chart</Heading>
+              </Column>
+              <Card Align="center">
+                <DonutChart Name="platforms" Height="180" Format="%.0f%%">
+                  <Slice Text="Windows" Value="46"/>
+                  <Slice Text="macOS" Value="27"/>
+                  <Slice Text="Linux" Value="17"/>
+                  <Slice Text="Other" Value="10"/>
+                </DonutChart>
+              </Card>
+            </Column>
+          </Box>
+          <Column Gap="4" PadTop="18" If="page == 8">
+            <Heading Level="4">Dither area chart</Heading>
+            <Secondary>Fills made of dots that thin out toward the base; stacked bands keep their own color.</Secondary>
+          </Column>
+          <Card If="page == 8">
+            <LineChart Name="requests" Height="220" Dither="true" Stacked="true" Smooth="true" Format="%.0fk"
+                       Labels="00:00|02:00|04:00|06:00|08:00|10:00|12:00|14:00|16:00|18:00|20:00|22:00">
+              <Series Text="API" Color="series4" Values="22,19,17,21,30,38,41,37,34,39,33,26"/>
+              <Series Text="Web" Color="series1" Values="18,15,13,16,24,33,36,40,38,42,35,28"/>
+            </LineChart>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 8">
+            <Heading Level="4">Pattern meter</Heading>
+            <Secondary>Each part has a color and a density, so it reads in grayscale too. Hover a part or a legend entry.</Secondary>
+          </Column>
+          <Card Gap="24" If="page == 8">
+            <PatternMeter Name="storage" Total="256" Label="Storage" Unit="GB" Grayscale="{grayscale}">
+              <Part Text="Photos" Value="81"/>
+              <Part Text="Video" Value="58"/>
+              <Part Text="Apps" Value="41"/>
+              <Part Text="Docs" Value="32"/>
+            </PatternMeter>
+            <Checkbox Text="Grayscale" Bind="grayscale"/>
+          </Card>
+          <Column Gap="4" PadTop="18" If="page == 8">
+            <Heading Level="4">Stacked bars and gauges</Heading>
+          </Column>
+          <Box Direction="grid" Columns="2" MinColumnWidth="260" Gap="16" If="page == 8">
+            <Card>
+              <BarChart Name="runs" Height="200" Stacked="true" Labels="W1|W2|W3|W4|W5|W6|W7|W8">
+                <Series Text="Passed" Values="112,124,131,128,140,152,149,161"/>
+                <Series Text="Retried" Values="9,11,8,12,10,9,13,8"/>
+                <Series Text="Failed" Values="4,6,3,5,7,4,6,3"/>
+              </BarChart>
+            </Card>
+            <Card Dir="row" Gap="24" Align="center">
+              <Gauge Label="CPU" Value="0.42" Size="130"/>
+              <Gauge Label="Memory" Value="0.81" Size="130"/>
+            </Card>
+          </Box>
+
+        </Column>
+      </Row>
+    </Scroll>
+  </Row>
+</Window>
