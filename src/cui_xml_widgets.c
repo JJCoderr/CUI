@@ -166,6 +166,8 @@ static const cui__xml_attr_row cui__xml_attr_rows[] = {
     { "Card", "Hoverable", CUI_XML_BOOL, NULL, "Lifts on hover and takes clicks (OnClicked)." },
     { "Card", "Muted", CUI_XML_BOOL, NULL, "Muted surface without a border." },
     { "Card", "Selected", CUI_XML_BOOL, NULL, "Accent border." },
+    { "Card", "MinWidth", CUI_XML_NUMBER, NULL, "Narrowest the card gets before its content wraps." },
+    { "Card", "MaxWidth", CUI_XML_NUMBER, NULL, "Widest it grows, e.g. a fill card that stops on wide screens." },
     { "Scroll", "Horizontal", CUI_XML_BOOL, NULL, "Also scroll sideways." },
     { "Scroll", "Scroll", CUI_XML_BOOL, NULL, "Scroll the content vertically (clips it)." },
     { "Split", "Ratio", CUI_XML_NUMBER, NULL, "Size of the first pane, 0 to 1 (default 0.5)." },
@@ -710,6 +712,8 @@ static void cui__xml_draw_card(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool 
     c.pad = cui__xml_attr_num(doc, n, "pad", 0);
     c.pad_x = cui__xml_attr_num(doc, n, "padx", 0);
     c.pad_y = cui__xml_attr_num(doc, n, "pady", 0);
+    c.min_width = cui__xml_attr_num(doc, n, "minwidth", 0);
+    c.max_width = cui__xml_attr_num(doc, n, "maxwidth", 0);
     c.gap = cui__xml_attr_num(doc, n, "gap", 0);
     c.dir = cui__xml_choice_of(doc, n, "dir", dirs, 2, 0) ? CUI_ROW : CUI_COLUMN;
     c.align = cui__xml_align_of(doc, n, CUI_ALIGN_DEFAULT);

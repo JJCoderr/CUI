@@ -13,10 +13,8 @@
   four measures, which roll when the range changes; a narrow window's drawer is
   <Drawer>, the sheet the C example opens over the window.
 
-  A Card has no MinWidth in a document, so the two chart cards only carry their
-  share of the row: at the width dashboard.c opens with neither minimum is
-  reached, and the two pictures are the same. `narrow`, `two` and `dark` are the
-  window's three facts, worked out in C every frame.
+  The two chart cards carry the same MinWidth dashboard.c gives them; `narrow`,
+  `two` and `dark` are the window's three facts, worked out in C every frame.
 -->
 <Window Title="Larkspur Dashboard" Width="1360" Height="900" Theme="light" Accent="blue">
 
@@ -120,7 +118,7 @@
 
         <!-- the revenue chart beside where the orders come from -->
         <Row Gap="16" Align="stretch" Wrap="true" Width="fill">
-          <Card Gap="16" Width="2*">
+          <Card Gap="16" Width="2*" MinWidth="300">
             <Row>
               <Column Gap="2" Width="fill">
                 <Label>Revenue</Label>
@@ -134,7 +132,7 @@
               <Series Text="Last year" Values="24,26,27,29,31,30,34,36,35,39,41,44"/>
             </LineChart>
           </Card>
-          <Card Gap="16" Width="1*">
+          <Card Gap="16" Width="1*" MinWidth="260">
             <Column Gap="2">
               <Label>Where orders come from</Label>
               <Text Size="12" Color="textSecondary">Share of November orders</Text>

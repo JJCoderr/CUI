@@ -175,7 +175,7 @@ height in a column; `Width="50%"` takes half of the parent.
 | `Grid` | children in columns of equal width | `Columns`, `MinColumnWidth` |
 | `Box` (`Panel`) | a plain container | the same as `Column`, plus `Direction` (`column`, `row`, `stack`, `grid`), `MinWidth`, `MaxWidth`, `MinHeight`, `MaxHeight` |
 | `Center` | its child centered on both axes | |
-| `Card` | a bordered surface with generous padding | `Hoverable`, `Muted`, `Selected`, `Dir="row"` |
+| `Card` | a bordered surface with generous padding | `Hoverable`, `Muted`, `Selected`, `Dir="row"`, `MinWidth`, `MaxWidth` |
 | `Scroll` (`ScrollBox`) | a scrolling area | `Horizontal`, `Scroll`, `Fade` |
 | `Split` | two children with a draggable divider | `Ratio`, `Vertical`, `MinFirst`, `MinSecond` |
 | `Spacer` | flexible space | |
