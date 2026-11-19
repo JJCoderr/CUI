@@ -104,11 +104,6 @@ endif()
 add_executable(cui_bench bench.c ../examples/gallery_ui.c ../examples/gallery_more.c)
 target_link_libraries(cui_bench PRIVATE cui::cui)
 
-if(CUI_WITH_VULKAN AND NOT CUI_BUILD_SHARED)
-    add_executable(cui_renderer_compare renderer_compare.c ../examples/gallery_ui.c ../examples/gallery_more.c)
-    target_link_libraries(cui_renderer_compare PRIVATE cui::cui)
-endif()
-
 add_executable(cui_component_shots component_shots.c)
 target_link_libraries(cui_component_shots PRIVATE cui::cui)
 

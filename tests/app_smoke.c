@@ -3,7 +3,6 @@
  *   cui_app_smoke [out.png] */
 #include <cui/cui_app.h>
 #include <cui/cui_render.h>
-#include "../src/platform/cui_platform.h"
 #include "../examples/gallery_ui.h"
 
 #include <stdio.h>
@@ -166,8 +165,7 @@ int main(int argc, char **argv) {
     cui_app *app = cui_app_create(&(cui_app_desc){ .title = "CUI smoke test", .width = 1000, .height = 700, .continuous = true,
                                                    .app_id = SMOKE_APP_ID });
     if (!app) { fprintf(stderr, "could not create app\n"); return 1; }
-    const char *renderer = app->vulkan ? "vulkan" : app->gl ? "opengl" : "software";
-    printf("backend=%s renderer=%s\n", cui_app_backend(app), renderer);
+    printf("backend=%s renderer=%s\n", cui_app_backend(app), cui_app_is_software(app) ? "software" : "opengl");
     static gallery g;
     gallery_init(&g);
     g.page = PAGE_SELECTION;

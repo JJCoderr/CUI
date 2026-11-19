@@ -124,12 +124,6 @@ if(CUI_WITH_APP)
     endif()
 endif()
 
-set(CUI_VULKAN_DEFAULT OFF)
-if(CUI_BACKEND STREQUAL "win32")
-    set(CUI_VULKAN_DEFAULT ON)
-endif()
-option(CUI_WITH_VULKAN "Include the Vulkan renderer for the native Win32 app" ${CUI_VULKAN_DEFAULT})
-
 if(CUI_BUILD_SHARED)
     add_library(cui SHARED ${CUI_CORE_SOURCES})
     target_compile_definitions(cui PUBLIC CUI_SHARED PRIVATE CUI_BUILDING)
@@ -143,40 +137,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/CuiApp.cmake)   # cui_app_target(), for 
 target_include_directories(cui PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
-
-if(CUI_WITH_VULKAN)
-    if(NOT CUI_BACKEND STREQUAL "win32")
-        message(FATAL_ERROR "CUI_WITH_VULKAN requires the native Win32 app backend")
-    endif()
-    find_path(CUI_VULKAN_INCLUDE_DIR vulkan/vulkan.h HINTS ENV VULKAN_SDK PATH_SUFFIXES Include include)
-    if(NOT CUI_VULKAN_INCLUDE_DIR)
-        include(FetchContent)
-        cmake_policy(PUSH)
-        if(POLICY CMP0135)
-            cmake_policy(SET CMP0135 NEW)
-        endif()
-        FetchContent_Declare(cui_vulkan_headers
-            URL https://codeload.github.com/KhronosGroup/Vulkan-Headers/tar.gz/refs/tags/v1.3.290
-            URL_HASH SHA256=f38a653bf93cab7a2a229a53d2d53b1cba9a2819e4c0a7de13c54085bde9bcf5
-            SOURCE_SUBDIR cui-headers-only)
-        cmake_policy(POP)
-        if(CMAKE_VERSION VERSION_LESS 3.18)
-            FetchContent_GetProperties(cui_vulkan_headers)
-            if(NOT cui_vulkan_headers_POPULATED)
-                FetchContent_Populate(cui_vulkan_headers)
-            endif()
-        else()
-            FetchContent_MakeAvailable(cui_vulkan_headers)
-        endif()
-        set(CUI_VULKAN_INCLUDE_DIR "${cui_vulkan_headers_SOURCE_DIR}/include")
-    endif()
-    target_sources(cui PRIVATE src/render/cui_render_vulkan.c)
-    target_compile_definitions(cui PRIVATE CUI_WITH_VULKAN)
-    if(CUI_BUILD_TESTS AND NOT CUI_BUILD_SHARED)
-        target_compile_definitions(cui PRIVATE CUI_VULKAN_BENCH)
-    endif()
-    target_include_directories(cui PRIVATE ${CUI_VULKAN_INCLUDE_DIR})
-endif()
 
 if(CUI_TEXT_SHAPING)
     target_sources(cui PRIVATE src/cui_bidi.c src/cui_shape.c)
