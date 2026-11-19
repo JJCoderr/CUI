@@ -1,4 +1,4 @@
-﻿/* The gallery of examples/gallery_ui.c and the same gallery described in
+/* The gallery of examples/gallery_ui.c and the same gallery described in
  * examples/gallery.xml, drawn with one viewport, theme and accent, frame for
  * frame, then compared: this test says whether a document reproduces the C
  * interface pixel for pixel.
@@ -30,10 +30,38 @@
 static const char *const slugs[PAGE_COUNT] = { "overview", "buttons", "inputs", "selection",
                                                "navigation", "overlays", "feedback", "data", "charts" };
 
+/* A file name for every page, the extended ones included: "Actions" becomes
+ * "actions", "More developer tools" "more-developer-tools". */
+static void page_slug(int page, char *out, size_t cap) {
+    if (page >= 0 && page < PAGE_COUNT) {
+        snprintf(out, cap, "%s", slugs[page]);
+        return;
+    }
+    {
+        const char *name = gallery_page_name(page);
+        size_t i = 0;
+        for (; name[i] && i + 1 < cap; i++)
+            out[i] = (name[i] >= 'A' && name[i] <= 'Z') ? (char)(name[i] + 32) : (name[i] == ' ' ? '-' : name[i]);
+        out[i] = 0;
+    }
+}
+
+/* How tall the window is when a page is drawn: the data page scrolls a long
+ * table, the rest fit 1000 points. */
+static float page_height(int page) { return page == PAGE_DATA ? 1500.0f : 1000.0f; }
+
+/* The pages examples/gallery.xml describes so far. The extended pages of
+ * examples/gallery_more.c are moving into it one at a time; add a page here
+ * when its XML draws it, so `ctest` says which remain. */
+static const int converted[] = { PAGE_OVERVIEW, PAGE_BUTTONS, PAGE_INPUTS, PAGE_SELECTION, PAGE_NAVIGATION,
+                                 PAGE_OVERLAYS, PAGE_FEEDBACK, PAGE_DATA, PAGE_CHARTS, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29 };
+
 typedef struct {
     cui_sw_renderer *sw;
     cui_ctx *ui;
 } canvas;
+
+static int g_doc_errors;   /* documents that reported a mistake while they drew */
 
 static bool canvas_open(canvas *c, bool dark, int accent, float width, float height) {
     memset(c, 0, sizeof *c);
@@ -105,6 +133,12 @@ static unsigned char *draw_xml(const char *path, int page, bool dark, int accent
     if (!doc) {
         canvas_close(&c);
         return NULL;
+    }
+    /* a document with a mistake still draws, so the test says so: an unknown tag
+     * or an attribute that does not parse would otherwise pass as a picture */
+    if (!cui_xml_ok(doc)) {
+        g_doc_errors++;
+        fprintf(stderr, "%s: %s\n", path, cui_xml_last_error(doc));
     }
     /* the document writes into `bound`, so it is the one that says which page
      * is drawn, what the theme is and which accent is chosen */
@@ -218,13 +252,17 @@ int main(int argc, char **argv) {
     }
     cui_xml_free(doc);
 
-    for (p = 0; p < PAGE_COUNT; p++) {
-        int d;
-        if (only >= 0 && only != p) continue;
-        for (d = 0; d < 2; d++) {
-            if (only_theme >= 0 && only_theme != d) continue;
-            fails += compare(CUI_GALLERY_XML_PATH, dir, slugs[p], p, d == 1, 0, 1240.0f,
-                             p == PAGE_DATA ? 1500.0f : 1000.0f) ? 1 : 0;
+    {
+        int c;
+        for (c = 0; c < (int)(sizeof converted / sizeof converted[0]); c++) {
+            int d;
+            p = converted[c];
+            if (only >= 0 && only != p) continue;
+            for (d = 0; d < 2; d++) {
+                if (only_theme >= 0 && only_theme != d) continue;
+                page_slug(p, slug, sizeof slug);
+                fails += compare(CUI_GALLERY_XML_PATH, dir, slug, p, d == 1, 0, 1240.0f, page_height(p)) ? 1 : 0;
+            }
         }
     }
     /* the accent variants the screenshot tool draws as well */
@@ -235,5 +273,26 @@ int main(int argc, char **argv) {
         fails += compare(CUI_GALLERY_XML_PATH, dir, slug, PAGE_SELECTION, false, CUI_ACCENT_BLUE, 1240.0f, 1000.0f) ? 1 : 0;
     }
     printf("%s\n", fails ? "the document and the gallery differ" : "the document draws the gallery");
-    return fails ? 1 : 0;
+    /* What is still drawn in C: the extended pages that have not moved into the
+     * document yet. They are listed so the gap is visible in the test's output. */
+    {
+        int p, total = gallery_page_total(), listed = 0;
+        for (p = 0; p < total; p++) {
+            int c, in = 0;
+            for (c = 0; c < (int)(sizeof converted / sizeof converted[0]); c++)
+                if (converted[c] == p) in = 1;
+            if (in) {
+                listed++;
+                continue;
+            }
+            {
+                char name[64];
+                page_slug(p, name, sizeof name);
+                printf("  still drawn in C: page %d (%s)\n", p, name);
+            }
+        }
+        printf("%d of %d pages are drawn by the document\n", listed, total);
+    if (g_doc_errors) printf("%d document(s) reported a mistake; see above\n", g_doc_errors);
+    }
+    return fails || g_doc_errors ? 1 : 0;
 }

@@ -532,7 +532,7 @@ cui_row(ui) {
 
 The rail fills as you read, and a marker glides to the section in view. Clicking an entry scrolls there smoothly. `level` indents entries.
 
-`cui_toc` returns the index of the section in view, or of the entry that was just clicked. The section in view is the last one whose anchor has passed a line 30% of the way down the scroll area. You own the `cui_toc_item` array: a title, the anchor's name and a level from 0 to 4. `cui_toc_anchor` puts an invisible marker at that point of the scroll area; call it just before each heading, with the same string as in the item. Anchor names are matched across the whole window whatever the id scope, so keep them unique.
+`cui_toc` returns the index of the section in view, or of the entry that was just clicked. The section in view is the last one whose anchor has passed a line 30% of the way down the scroll area. You own the `cui_toc_item` array: a title, the anchor's name and a level from 0 to 4. `cui_toc_anchor` puts an invisible marker at that point of the scroll area; call it just before each heading, with the same string as in the item. Anchor names are matched across the whole window whatever the id scope, so keep them unique. When you already have the scroll area's id — a document knows the ids of its elements — `cui_toc_at(ui, id, items, count)` and `cui_scroll_to_at(ui, id, y)` take it instead of a name, whose hash depends on the id scope of the caller.
 
 Keyboard: Tab moves through the entries, and Enter or Space jumps to the focused section.
 

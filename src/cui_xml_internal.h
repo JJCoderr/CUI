@@ -160,10 +160,171 @@
     X(DOTDISPLAY,  "DotDisplay",    0, "Text drawn with the 5 by 7 dot font, for clocks and counters.")              \
     X(FOOTER,      "DialogFooter",  2, "The row of buttons at the bottom of a Dialog.")
 
+#define CUI__XML_TAGS_6(X)                                                                      \
+    X(DROPZONE,    "Dropzone",      0, "A target for files dropped from the desktop, or a click to browse.")         \
+    X(SIGNATUREPAD, "SignaturePad", 0, "A pad to draw a signature on, with the mouse or a pen.")                      \
+    X(AVATARUPLOAD, "AvatarUpload", 0, "A round avatar that takes a dropped image.")                                 \
+    X(TOC,         "Toc",           2, "A table of contents for a scroll area, with <TocItem> children.")             \
+    X(TOCITEM,     "TocItem",       0, "One entry of a Toc: its Anchor names a TocAnchor in the scroll area.")         \
+    X(TOCANCHOR,   "TocAnchor",     0, "Where a section starts inside the scroll area its Toc follows.")              \
+    X(INLINEEDIT,  "InlineEdit",    0, "Text that turns into a field where it stands; holds text.")                    \
+    X(SCRUB,       "Scrub",         0, "A number field you drag sideways; holds a number.")                            \
+    X(MONEYINPUT,  "MoneyInput",    0, "An amount with grouped digits and a currency; holds a number.")                \
+    X(SHORTCUTRECORDER, "ShortcutRecorder", 0, "A field that records a key combination; holds the keys.")               \
+    X(EMOJIPICKER, "EmojiPicker",   0, "A grid of emoji with search and groups; reports the one picked.")            \
+    X(DOTCHART,    "DotChart",      2, "A dot-matrix chart with <Series> and <Annotation> children.")                    \
+    X(ANNOTATION,  "Annotation",    0, "A line or a point over a chart, with a label.")                                \
+    X(EVENTTRACK,  "EventTrack",    0, "Moments on an axis that can be dragged, added and removed.")                  \
+    X(HOVERCARD,   "HoverCard",     2, "A panel that appears when the pointer rests on it, around its children.")       \
+    X(CONFIRMPOPOVER, "ConfirmPopover", 0, "A question anchored to the element before it; OnClicked when confirmed.")    \
+    X(EXPANDABLETEXT, "ExpandableText", 0, "Text clamped to a few lines, with Show more.")                             \
+    X(EXPANDABLECARD, "ExpandableCard", 2, "A card whose header opens a body; Open says whether it starts open.")       \
+    X(COUNTDOWN,   "Countdown",     0, "Digits counting down to a moment, Seconds from the first frame.")               \
+    X(CHECKLIST,   "Checklist",     2, "An onboarding checklist card, with <Step> children.")                           \
+    X(STEP,        "Step",          0, "One step of a Checklist: title, Description, Action, Done.")                     \
+    X(VEIL,        "Veil",          2, "Covers its children with moving dots until Revealed is set.")                  \
+    X(SPLITBUTTON, "SplitButton",   0, "A main action with related ones in a menu; reports the one chosen.")            \
+    X(TOGGLEGROUP, "ToggleGroup",   0, "A row of toggles, independent or exclusive like radio buttons.")                 \
+    X(CONFIRMBUTTON, "ConfirmButton", 0, "A destructive button that asks once before it fires.")                        \
+    X(STATUSBUTTON, "StatusButton", 0, "A button that shows the work it started: busy, done or failed.")                \
+    X(REACTIONS,   "Reactions",     0, "Reaction pills with counts; a click reacts.")                                   \
+    X(THEMESWITCHER, "ThemeSwitcher", 0, "Light, dark and system as a compact segmented control.")                      \
+    X(THEMETOGGLE, "ThemeToggle",   0, "A sun and moon button that switches the theme.")                                \
+    X(USERMENU,    "UserMenu",      2, "An avatar, a name and a menu of account actions around its children.")          \
+    X(SWIPEITEM,   "SwipeItem",     2, "A row whose children slide to reveal actions on Left and Right.")                \
+    X(SPEEDDIAL,   "SpeedDial",     0, "A round button that fans out related actions; reports the one chosen.")      \
+    X(MULTISELECT, "MultiSelect",   0, "A field of chips over a list with checkboxes; holds which items are chosen.")   \
+    X(DATERANGEPICKER, "DateRangePicker", 0, "A start and an end date, with presets; holds the range.")                 \
+    X(RANGECALENDAR, "RangeCalendar", 0, "One or two months to pick a range in; holds the range.")                      \
+    X(TIMEPICKER,  "TimePicker",    0, "A field with hour and minute columns; holds a time.")                            \
+    X(TIMEDIAL,    "TimeDial",      0, "A clock face to set a time on; holds hours and minutes.")                        \
+    X(WHEELPICKER, "WheelPicker",   0, "A drum of options; holds the chosen index.")                                    \
+    X(RULERSLIDER, "RulerSlider",   0, "A tape measure under a fixed marker; holds a number.")                          \
+    X(HISTOGRAMSLIDER, "HistogramSlider", 0, "A range over the data it filters; holds two numbers.")                  \
+    X(CHATMESSAGE, "ChatMessage",   0, "One message of a conversation; Mine aligns it to the right.")                   \
+    X(REASONING,   "Reasoning",     2, "What the model thought, folded away; Thinking keeps it open.")                  \
+    X(TOOLCALL,    "ToolCall",      0, "One call a tool made, with its input and output.")                              \
+    X(AGENTSTATUS, "AgentStatus",   0, "What the agent is doing now, and for how long.")                                \
+    X(TYPEWRITER,  "Typewriter",    0, "Text that types itself in.")                                                    \
+    X(CITATION,    "Citation",      0, "A number that shows a source from a SourceList on hover.")                      \
+    X(SOURCELIST,  "SourceList",    2, "The documents an answer used, with <Source> children.")                         \
+    X(SOURCE,      "Source",        0, "One document: Title, URL, Snippet.")                                            \
+    X(RESPONSEACTIONS, "ResponseActions", 0, "Copy, regenerate, vote and share under an answer.")                       \
+    X(CONTEXTMETER, "ContextMeter", 2, "A ring of how full the context is, with <Part> children.")                      \
+    X(CHATCOMPOSER, "ChatComposer", 0, "A growing field with attachments and a model picker; holds text.")              \
+    X(AGENTPLAN,   "AgentPlan",     2, "Steps with their status, with <PlanStep> children.")                            \
+    X(PLANSTEP,    "PlanStep",      0, "One step: Detail and Status.")                                                   \
+    X(PROMPTSUGGESTIONS, "PromptSuggestions", 2, "Cards to start a conversation with, from <Suggestion> children.")     \
+    X(SUGGESTION,  "Suggestion",    0, "One card: Icon, Detail.")                                                       \
+    X(KNOB,        "Knob",          0, "A round control turned by dragging; holds a number.")                            \
+    X(FADER,       "Fader",         0, "A track with a handle and a level meter beside it; holds a number.")             \
+    X(LEVELMETER,  "LevelMeter",    0, "Bars that follow the levels they are given.")                                    \
+    X(TOUR,        "Tour",          2, "A guided tour of elements by name, with <TourStep> children.")                   \
+    X(TOURSTEP,    "TourStep",      0, "One step: Target, Description, Placement.")                                     \
+    X(RATIOSLIDER, "RatioSlider",   0, "Two named parts with a bar between them; holds a share.")                        \
+    X(GRADIENTSLIDER, "GradientSlider", 0, "A slider whose track is the value: hue, white balance, opacity.")            \
+    X(STEPSLIDER,  "StepSlider",    0, "A slider that snaps to a few stops; holds an index.")                            \
+    X(PALETTESTRIP, "PaletteStrip", 0, "Swatches that lock and shuffle; holds the colors.")                             \
+    X(ASPECTPICKER, "AspectPicker", 0, "Ratio choices drawn as shapes; holds an index.")                                \
+    X(OPTIONACTION, "OptionAction", 0, "A compact choice beside the action it feeds; holds an index.")                   \
+    X(SEEDFIELD,   "SeedField",     0, "A random seed with a dice and a lock; holds a number.")                         \
+    X(LOADER,      "Loader",        0, "A looping wait: dots, bars, pulse, orbit or grid.")                              \
+    X(SHIMMERTEXT, "ShimmerText",   0, "Text with a highlight sweeping across it.")                                      \
+    X(TEXTREVEAL,  "TextReveal",    0, "Words that fade and rise into place.")                                           \
+    X(WORDROTATE,  "WordRotate",    0, "One word at a time, rolling to the next.")                                       \
+    X(GRADIENTTEXT, "GradientText", 0, "Text painted with a gradient, drifting when Animate is set.")                    \
+    X(SPOTLIGHT,   "Spotlight",     2, "A card with a light that follows the pointer, around its children.")             \
+    X(DOCK,        "Dock",          2, "A row of icons that grow as the pointer passes, with <DockItem> children.")       \
+    X(DOCKITEM,    "DockItem",      0, "One icon of a Dock: Icon, Color, Running, Badge.")                               \
+    X(DOCKSEPARATOR, "DockSeparator", 0, "A line between groups of a Dock.")                                             \
+    X(CONTROLTILE, "ControlTile",   0, "A large toggle for quick settings; holds a bool.")                               \
+    X(NOWPLAYING,  "NowPlaying",    0, "Artwork, a scrubber and transport; holds the track and its position.")           \
+    X(WAVEFORM,    "Waveform",      0, "Bars from peaks; holds how much has played.")                                    \
+    X(TABBAR,      "TabBar",        2, "A bottom tab bar with a gliding pill, from <TabItem> children.")                 \
+    X(TABITEM,     "TabItem",       0, "One tab: Icon, Badge.")                                                          \
+    X(TREEMAP,     "Treemap",       2, "Rectangles by value, from <Part> children.")                                      \
+    X(FUNNEL,      "Funnel",        2, "Stages that narrow, from <Part> children.")                                       \
+    X(SPLITBAR,    "SplitBar",      2, "One bar split into parts, with a legend, from <Part> children.")                  \
+    X(WAFFLE,      "Waffle",        2, "A grid of squares by share, from <Part> children.")                               \
+    X(BARLIST,     "BarList",       2, "Ranked bars from <Part> children.")                                               \
+    X(ACTIVITYRINGS, "ActivityRings", 2, "Concentric rings, from <Part> children.")                                       \
+    X(HEATMAP,     "Heatmap",       0, "A grid of cells from Values, Rows and Cols.")                                     \
+    X(CALENDARHEATMAP, "CalendarHeatmap", 0, "A year of activity, one square a day.")                                     \
+    X(RADIALGAUGE, "RadialGauge",   0, "A value on an arc, with bands and a target.")                                     \
+    X(RADAR,       "Radar",         2, "Series over shared Axes, from <Series> children.")                                \
+    X(SCATTER,     "Scatter",       2, "Points per series, from <Series Points=\"x,y;...\"> children.")                   \
+    X(SANKEY,      "Sankey",        0, "Flows between named Nodes, listed in Links.")                                    \
+    X(KANBAN,      "Kanban",        2, "A board of <KanbanColumn> children; OnChanged when a card moves.")               \
+    X(KANBANCOLUMN, "KanbanColumn", 2, "One column: Dot, Limit, Width, and <KanbanCard> children.")                      \
+    X(KANBANCARD,  "KanbanCard",    2, "One card: Card is its id; its children are its content.")                        \
+    X(WEEKCALENDAR, "WeekCalendar", 2, "Seven days of events, from <Event> children.")                                   \
+    X(CALEVENT,    "Event",         0, "One event: Day, Start, End, Detail, Tone.")                                       \
+    X(GANTT,       "Gantt",         2, "A plan of <Task> bars, Days long.")                                              \
+    X(TASK,        "Task",          0, "One bar: Owner, Start, End, Progress, DependsOn, Milestone.")                    \
+    X(MONTHCALENDAR, "MonthCalendar", 2, "A month grid, from <MonthEvent> children.")                                     \
+    X(MONTHEVENT,  "MonthEvent",    0, "One event: Day, Span, Time, AllDay, Tone.")                                      \
+    X(VOICENOTE,   "VoiceNote",     0, "A recorded message with its waveform; holds the clip and its position.")         \
+    X(VOICEWAVE,   "VoiceWave",     0, "A strip of levels, one column each, for one voice or two.")                       \
+    X(VOICESESSION, "VoiceSession", 0, "A spoken conversation: the strip, the live transcript, Mute and End.")          \
+    X(CHATDIVIDER, "ChatDivider",   0, "A line with a label between groups of messages, e.g. Today.")                    \
+    X(TYPINGINDICATOR, "TypingIndicator", 0, "Bouncing dots under the last message: \"Jonas is typing\".")               \
+    X(COMMENT,     "Comment",       0, "One comment with replies, likes and a badge; holds the like.")                    \
+    X(PRESENCE,    "Presence",      0, "Overlapping avatars of who is here, from Users.")                                \
+    X(COUNTER,     "Counter",       0, "A figure whose changed digits roll into place.")                                \
+    X(TICKER,      "Ticker",        0, "A strip of figures scrolling by, pausing on hover.")                    \
+    X(CARDSTACK,   "CardStack",     2, "Cards a flick throws away, from <CardStackItem> children.")                \
+    X(CARDSTACKITEM, "CardStackItem", 2, "One card of a CardStack; its children are its content.")                       \
+    X(FILTERBAR,   "FilterBar",     2, "A search field and chips; holds what is chosen and typed.")                       \
+    X(FIELD,       "Field",         0, "One filter: Icon, Options.")                                                      \
+    X(TREETABLE,   "TreeTable",     2, "A table with disclosure and indentation, from <TreeRow> children.")               \
+    X(TREEROW,     "TreeRow",       0, "One row: Depth, Open, Icon, Cells.")                                              \
+    X(PROBLEMS,    "Problems",      2, "Diagnostics grouped by file, from <Diagnostic> children.")                          \
+    X(DIAGNOSTIC,  "Diagnostic",    0, "One diagnostic: Severity, File, Line, Column, Source, Code.")                       \
+    X(KVEDITOR,    "KvEditor",      2, "Key and value rows, from <Pair> children; holds the pairs.")                        \
+    X(PAIR,        "Pair",          0, "One pair: Key, Value, Enabled, Secret.")                                           \
+    X(PIPELINE,    "Pipeline",      2, "Stages of <Stage> names with <Job> children.")                                       \
+    X(STAGE,       "Stage",         0, "One stage name.")                                                                  \
+    X(JOB,         "Job",           0, "One job: Stage, Status, Duration, AllowFailure.")                                  \
+    X(QUERYBUILDER, "QueryBuilder", 2, "Nested <Condition> groups over <Field> names.")                                   \
+    X(CONDITION,   "Condition",     0, "A group (Group=""all|any"") or a rule (Field, Op, Value).")                          \
+    X(SCHEDULEPICKER, "SchedulePicker", 0, "A cron schedule edited the friendly way; holds the expression.")              \
+    X(KEYMAP,      "Keymap",        2, "A keyboard of <Binding> children and <Category> names.")                          \
+    X(BINDING,     "Binding",       0, "One binding: Keys (""primary+s""), Category.")                                     \
+    X(CATEGORY,    "Category",      0, "One category name of a Keymap.")                                                \
+    X(TESTEXPLORER, "TestExplorer", 2, "Suites and tests, from <Test> children.")                                         \
+    X(TEST,        "Test",          0, "One test: Depth, Status, Duration, Message.")                                     \
+    X(STACKTRACE,  "StackTrace",    2, "An exception and its <Frame> children.")                                          \
+    X(FRAME,       "Frame",         0, "One frame: File, Line, Column, Library, Source, First.")                          \
+    X(REQUESTBAR,  "RequestBar",    0, "The method, the URL and Send; holds both.")                                       \
+    X(RESPONSESTATUS, "ResponseStatus", 0, "A response's status, time and size.")                                         \
+    X(URLPARAMS,   "UrlParams",     0, "The query of a URL as key and value rows; holds them.")                           \
+    X(COVERAGE,    "Coverage",      2, "Coverage per file, from <File> children.")                                        \
+    X(COVERAGEFILE, "CoverageFile", 0, "One file: Lines, LinesHit, Branches, BranchesHit, Functions, FunctionsHit.")      \
+    X(FEATUREFLAGS, "FeatureFlags", 2, "A switch per environment, from <Flag> and <Env> children.")                       \
+    X(FLAG,        "Flag",          0, "One flag: Description, Envs, Rollouts.")                                          \
+    X(ENV,         "Env",           0, "One environment name.")                                                           \
+    X(APIEXPLORER, "ApiExplorer",   2, "Endpoints by tag, from <Endpoint> children; holds the open one.")                 \
+    X(ENDPOINT,    "Endpoint",      2, "One endpoint: Method, Path, Category, Deprecated, with <Param> children.")        \
+    X(PARAM,       "Param",         0, "One parameter: In, Type, Required, Description.")                     \
+    X(REGEXTESTER, "RegexTester",   0, "A pattern and a sample text; matches are marked as you type.")                 \
+    X(NODEEDITOR,  "NodeEditor",    2, "A canvas of <Node> children, joined by <NodeLink>.")                       \
+    X(NODE,        "Node",          2, "One node: Width, Icon, with <NodeInput>, <NodeOutput> and <NodeContent>.")      \
+    X(NODEINPUT,   "NodeInput",     0, "An input pin: Pin, Type.")                                                      \
+    X(NODEOUTPUT,  "NodeOutput",    0, "An output pin: Pin, Type.")                                                     \
+    X(NODECONTENT, "NodeContent",   2, "The row of a node that holds ordinary components.")                             \
+    X(NODELINK,    "NodeLink",      0, "A link: Link, From pin, To pin.")                                               \
+    X(SELECTIONRING, "SelectionRing", 0, "A ring in someone's color around what it follows: Tone, Name.")              \
+    X(CANVASCONTROLS, "CanvasControls", 2, "A zoom rail over the previous component, with <CanvasToggle> children.")   \
+    X(CANVASTOGGLE, "CanvasToggle", 0, "One switch of the rail: Icon, Text, On.")                                       \
+    X(LIVECURSORS, "LiveCursors",   0, "Other people's pointers on the canvas, from Users.")                           \
+    X(PRESENCEPILL, "PresencePill", 0, "Who is here, as overlapping avatars, from Users.")                             \
+    X(FORMATBAR,   "FormatBar",     0, "Color, weight, style, alignment and lists for a selection; holds them.")
+
 /* The halves, in order: one list for the enum, the catalog and the drawing
  * switch. It is split because one macro invocation per chunk keeps each
  * expansion short (MSVC is unhappy with very long ones). */
-#define CUI__XML_TAGS(X) CUI__XML_TAGS_1(X) CUI__XML_TAGS_2(X) CUI__XML_TAGS_3(X) CUI__XML_TAGS_4(X) CUI__XML_TAGS_5(X)
+#define CUI__XML_TAGS(X) CUI__XML_TAGS_1(X) CUI__XML_TAGS_2(X) CUI__XML_TAGS_3(X) CUI__XML_TAGS_4(X) CUI__XML_TAGS_5(X) \
+                          CUI__XML_TAGS_6(X)
 
 
 typedef enum cui_xml_tag_id {

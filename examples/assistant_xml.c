@@ -374,13 +374,13 @@ static cui_xml *open_document(const char *path) {
     cui_xml_set_var(doc, "busy", "0");
     cui_xml_on_any(doc, on_action, NULL);
     cui_xml_register_tag(doc, "Answer", tag_answer, NULL);
-    cui_xml_register_tag(doc, "ChatMessage", tag_chat_message, NULL);
+    cui_xml_register_tag(doc, "Message", tag_chat_message, NULL);
     cui_xml_register_tag(doc, "ModelPicker", tag_model_picker, NULL);
-    cui_xml_register_tag(doc, "ContextMeter", tag_context_meter, NULL);
+    cui_xml_register_tag(doc, "Context", tag_context_meter, NULL);
     cui_xml_register_tag(doc, "Plan", tag_plan, NULL);
-    cui_xml_register_tag(doc, "PromptSuggestions", tag_prompt_suggestions, NULL);
-    cui_xml_register_tag(doc, "ChatComposer", tag_chat_composer, NULL);
-    cui_xml_register_tag(doc, "UserMenu", tag_user_menu, NULL);
+    cui_xml_register_tag(doc, "Suggestions", tag_prompt_suggestions, NULL);
+    cui_xml_register_tag(doc, "Composer", tag_chat_composer, NULL);
+    cui_xml_register_tag(doc, "AccountMenu", tag_user_menu, NULL);
     cui_xml_register_tag(doc, "Drawer", tag_drawer, NULL);
     return doc;
 }

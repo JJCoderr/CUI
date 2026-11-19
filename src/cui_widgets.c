@@ -1342,7 +1342,11 @@ cui_color cui__backdrop(cui_ctx *ui) {
 void cui_scroll_end(cui_ctx *ui) { cui__scroll_end_ex(ui); }
 
 void cui_scroll_to(cui_ctx *ui, const char *scroll_id, float y) {
-    cui_scroll_state *st = cui_state(ui, cui_make_id(ui, scroll_id), sizeof *st);
+    cui_scroll_to_at(ui, cui_make_id(ui, scroll_id), y);
+}
+
+void cui_scroll_to_at(cui_ctx *ui, cui_id scroll, float y) {
+    cui_scroll_state *st = cui_state(ui, scroll, sizeof *st);
     st->ty = y < 0 ? 0 : y;
 }
 

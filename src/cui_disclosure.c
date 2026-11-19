@@ -291,8 +291,12 @@ static void cui__paint_toc_rail(cui_ctx *ui, cui_node *n, void *data) {
 }
 
 int cui_toc(cui_ctx *ui, const char *scroll_id, const cui_toc_item *items, int count) {
+    return cui_toc_at(ui, cui_make_id(ui, scroll_id), items, count);
+}
+
+int cui_toc_at(cui_ctx *ui, cui_id scroll, const cui_toc_item *items, int count) {
     if (count > 64) count = 64;
-    cui_id scid = cui_make_id(ui, scroll_id);
+    cui_id scid = scroll;
     cui_id tid = scid ^ 0x70CCu;
     cui__toc_state *st = cui_state(ui, tid, sizeof *st);
     cui_scroll_state *ss = cui_state(ui, scid, sizeof *ss);
@@ -366,7 +370,7 @@ int cui_toc(cui_ctx *ui, const char *scroll_id, const cui_toc_item *items, int c
         if (cui__has_prev_rect(ui, aid) && view.h > 0) {
             cui_rect ar = cui__prev_rect(ui, aid);
             float y = ar.y - view.y + ss->y - 12;
-            cui_scroll_to(ui, scroll_id, CUI_MAX(0.0f, y));
+            cui_scroll_to_at(ui, scid, CUI_MAX(0.0f, y));
         }
         active = clicked;
     }

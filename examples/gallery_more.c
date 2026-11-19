@@ -25,7 +25,9 @@ static void page_actions(cui_ctx *ui) {
         { CUI_ICON_THUMBS_UP, 12, true }, { CUI_ICON_HEART, 4, false }, { CUI_ICON_ROCKET, 7, false }, { CUI_ICON_SMILE, 2, false },
     };
     static int dial_choice = -1;
-    static int theme_mode = -1;
+    /* the switcher shows the window's theme: reading it every frame keeps the page
+     * the same whatever the window was before */
+    int theme_mode;
     static int deleted;
     static int split_choice = -1;
 
@@ -68,6 +70,7 @@ static void page_actions(cui_ctx *ui) {
 
     section(ui, "Theme", "A compact switcher and a single toggle that morphs between sun and moon.");
     cui_row(ui, .gap = 16, .wrap = true) {
+        theme_mode = cui_get_theme_mode(ui) == CUI_THEME_DARK ? 1 : 0;
         cui_theme_switcher(ui, &theme_mode, true);
         cui_theme_toggle(ui);
     }
@@ -411,6 +414,52 @@ static int cmp_people(const void *a, const void *b) {
     return people_sort.descending ? -r : r;
 }
 
+/* The data grid of this page, its 2,000 rows and all. examples/gallery.xml places
+ * it with <PeopleGrid>, a tag the gallery host registers: rows are data, and the
+ * document says where they go. */
+static int people_note_sel;
+
+void gallery_more_people_grid(cui_ctx *ui) {
+    static const cui_grid_column cols[] = {
+        { "Name", 200, CUI_TEXT_LEFT, true }, { "Email", 196, CUI_TEXT_LEFT, false }, { "Team", 110, CUI_TEXT_LEFT, true },
+        { "Commits", 96, CUI_TEXT_RIGHT, true }, { "Score", 130, CUI_TEXT_RIGHT, true },
+    };
+    int n_sel = 0;
+    int f0, l0;
+    for (int k = 0; k < PEOPLE; k++) n_sel += people_sel[k];
+    people_note_sel = n_sel;
+    if (cui_data_grid_begin(ui, "people", cols, 5, PEOPLE, &f0, &l0, .height = CUI_PX(420), .selected = people_sel, .sort = &people_sort)) {
+        for (int r = f0; r < l0; r++) {
+            person *p = &people[order_ix[r]];
+            cui_data_grid_row(ui, r);
+            cui_data_grid_cell(ui);
+            cui_avatar(ui, p->name, .size = 24);
+            cui_data_grid_edit(ui, p->name, sizeof p->name);
+            cui_data_grid_cell_text(ui, p->email);
+            cui_data_grid_cell(ui);
+            cui_badge(ui, p->team);
+            {
+                char buf[16];
+                snprintf(buf, sizeof buf, "%d", p->commits);
+                cui_data_grid_cell_text(ui, buf);
+            }
+            cui_data_grid_cell(ui);
+            cui_progress(ui, p->score / 100, .width = CUI_PX(70), .height = 5);
+            {
+                char buf[16];
+                snprintf(buf, sizeof buf, "%.1f", (double)p->score);
+                cui_text(ui, buf, .tabular = true, .size = 13, .color = CUI_COLOR_TEXT_SECONDARY);
+            }
+        }
+        cui_data_grid_end(ui);
+    }
+}
+
+/* The line under the grid: what the selection is. */
+const char *gallery_more_people_note(void) {
+    return people_note_sel ? "Rows selected. Press Esc to clear." : "Click a row, Shift+click to select a range, Ctrl+A for all.";
+}
+
 static void page_grid(cui_ctx *ui) {
     static bool init;
     static cui_table_sort last_sort = { -1, false };
@@ -454,39 +503,8 @@ static void page_grid(cui_ctx *ui) {
     cui_filter_bar(ui, "filters", fields, 3, filters, search, sizeof search);
 
     section(ui, "Data grid", "2,000 rows, virtualized. Sort, resize columns, select with Shift and Ctrl, edit names with a double click.");
-    static const cui_grid_column cols[] = {
-        { "Name", 200, CUI_TEXT_LEFT, true }, { "Email", 196, CUI_TEXT_LEFT, false }, { "Team", 110, CUI_TEXT_LEFT, true },
-        { "Commits", 96, CUI_TEXT_RIGHT, true }, { "Score", 130, CUI_TEXT_RIGHT, true },
-    };
-    int n_sel = 0;
-    for (int k = 0; k < PEOPLE; k++) n_sel += people_sel[k];
-    int f0, l0;
-    if (cui_data_grid_begin(ui, "people", cols, 5, PEOPLE, &f0, &l0, .height = CUI_PX(420), .selected = people_sel, .sort = &people_sort)) {
-        for (int r = f0; r < l0; r++) {
-            person *p = &people[order_ix[r]];
-            cui_data_grid_row(ui, r);
-            cui_data_grid_cell(ui);
-            cui_avatar(ui, p->name, .size = 24);
-            cui_data_grid_edit(ui, p->name, sizeof p->name);
-            cui_data_grid_cell_text(ui, p->email);
-            cui_data_grid_cell(ui);
-            cui_badge(ui, p->team);
-            {
-                char buf[16];
-                snprintf(buf, sizeof buf, "%d", p->commits);
-                cui_data_grid_cell_text(ui, buf);
-            }
-            cui_data_grid_cell(ui);
-            cui_progress(ui, p->score / 100, .width = CUI_PX(70), .height = 5);
-            {
-                char buf[16];
-                snprintf(buf, sizeof buf, "%.1f", (double)p->score);
-                cui_text(ui, buf, .tabular = true, .size = 13, .color = CUI_COLOR_TEXT_SECONDARY);
-            }
-        }
-        cui_data_grid_end(ui);
-    }
-    cui_muted(ui, n_sel ? "Rows selected. Press Esc to clear." : "Click a row, Shift+click to select a range, Ctrl+A for all.");
+    gallery_more_people_grid(ui);
+    cui_muted(ui, gallery_more_people_note());
 
     section(ui, "Tree table", "Tree cells inside a table: disclosure, indentation, totals.");
     {
@@ -1118,8 +1136,7 @@ static void page_ai(cui_ctx *ui) {
 
 static void page_audio(cui_ctx *ui) {
     static float cutoff = 1800, res = 0.3f, attack = 12, pan = 0.15f, faders[6] = { -4, -9, 0, -15, -6, -2 };
-    static int tick;
-    tick++;
+    double tick = (double)cui_frame_count(ui);   /* the frame number: the meters move with the page, the same in any run */
     static const char *names[6] = { "Kick", "Snare", "Bass", "Keys", "Vocals", "FX" };
     static const float marks[] = { 6, 0, -6, -12, -24, -48 };
     float lv[6][2];
@@ -1173,56 +1190,74 @@ static int files_list(void *user, const char *path, cui_file_entry *out, int cap
     return 6;
 }
 
-static void page_files(cui_ctx *ui) {
-    static char folder[1024] = ".";
-    static bool open_dlg, save_dlg;
-    static char chosen[1024];
-    section(ui, "File browser", "Double-click to open; type to jump; Backspace goes up.");
-    cui_file_browser_result r = cui_file_browser(ui, "files", folder, sizeof folder, .list = files_list, .height = CUI_PX(380));
-    if (r.picked) snprintf(chosen, sizeof chosen, "%s", r.picked);
-    cui_row(ui, .gap = 8, .align = CUI_ALIGN_CENTER, .wrap = true) {
-        if (cui_button(ui, "Open\xe2\x80\xa6", .icon = CUI_ICON_FOLDER_OPEN)) open_dlg = true;
-        if (cui_button(ui, "Save as\xe2\x80\xa6", .icon = CUI_ICON_DOWNLOAD)) save_dlg = true;
-        if (chosen[0]) cui_muted(ui, chosen);
-    }
-    cui_file_picker(ui, "open", &open_dlg, chosen, sizeof chosen, .list = files_list);
-    cui_file_picker(ui, "save", &save_dlg, chosen, sizeof chosen, .list = files_list, .save = true, .name = "untitled.txt");
+/* ---- files ---------------------------------------------------------------- */
 
-    /* a small shell over the same folder */
-    static cui_terminal_buffer term;
-    static char term_text[64 * 1024];
-    static cui_terminal_line term_lines[1024];
-    if (!term.line_cap) {
-        cui_terminal_init(&term, term_text, sizeof term_text, term_lines, 1024);
-        cui_terminal_write(&term, "Type \x1b[1mhelp\x1b[0m for the commands.\n", -1);
+/* What the Files page shows lives here: a browser over the disk, two dialogs and a
+ * shell. examples/gallery.xml places them with tags this gallery host registers. */
+static char fm_folder[1024] = ".";
+static char fm_chosen[1024];
+static cui_terminal_buffer fm_term;
+static char fm_term_text[64 * 1024];
+static cui_terminal_line fm_term_lines[1024];
+
+void gallery_more_file_browser(cui_ctx *ui) {
+    cui_file_browser_result r = cui_file_browser(ui, "files", fm_folder, sizeof fm_folder, .list = files_list, .height = CUI_PX(380));
+    if (r.picked) snprintf(fm_chosen, sizeof fm_chosen, "%s", r.picked);
+}
+
+void gallery_more_file_pickers(cui_ctx *ui, bool *open_dlg, bool *save_dlg) {
+    cui_file_picker(ui, "open", open_dlg, fm_chosen, sizeof fm_chosen, .list = files_list);
+    cui_file_picker(ui, "save", save_dlg, fm_chosen, sizeof fm_chosen, .list = files_list, .save = true, .name = "untitled.txt");
+}
+
+const char *gallery_more_chosen_path(void) { return fm_chosen; }
+
+void gallery_more_terminal(cui_ctx *ui) {
+    if (!fm_term.line_cap) {
+        cui_terminal_init(&fm_term, fm_term_text, sizeof fm_term_text, fm_term_lines, 1024);
+        cui_terminal_write(&fm_term, "Type \x1b[1mhelp\x1b[0m for the commands.\n", -1);
     }
-    section(ui, "Terminal", "Colors, \\r progress, history on Up and Down, Ctrl+C, Ctrl+L, drag to select.");
-    cui_terminal_result tr = cui_terminal(ui, "shell", &term, .height = 300, .prompt = "> ");
+    cui_terminal_result tr = cui_terminal(ui, "shell", &fm_term, .height = 300, .prompt = "> ");
     if (tr.command) {
         const char *c = tr.command;
-        if (!strcmp(c, "help")) cui_terminal_write(&term, "  \x1b[36mls\x1b[0m      the folder above\n  \x1b[36mcolors\x1b[0m  the 16 colors\n  \x1b[36mbuild\x1b[0m   a progress bar\n  \x1b[36mecho\x1b[0m    prints its words\n  \x1b[36mclear\x1b[0m   empties the screen\n", -1);
+        if (!strcmp(c, "help")) cui_terminal_write(&fm_term, "  \x1b[36mls\x1b[0m      the folder above\n  \x1b[36mcolors\x1b[0m  the 16 colors\n  \x1b[36mbuild\x1b[0m   a progress bar\n  \x1b[36mecho\x1b[0m    prints its words\n  \x1b[36mclear\x1b[0m   empties the screen\n", -1);
         else if (!strcmp(c, "ls")) {
             static cui_file_entry ents[256];
             static char names[16384];
-            int n = files_list(NULL, folder, ents, 256, names, sizeof names, false);
-            for (int k = 0; k < n; k++) cui_terminal_printf(&term, ents[k].dir ? "\x1b[1;34m%s/\x1b[0m\n" : "%s\n", ents[k].name);
-            if (n < 0) cui_terminal_write(&term, "\x1b[31mls: cannot read this folder\x1b[0m\n", -1);
+            int n = files_list(NULL, fm_folder, ents, 256, names, sizeof names, false);
+            for (int k = 0; k < n; k++) cui_terminal_printf(&fm_term, ents[k].dir ? "\x1b[1;34m%s/\x1b[0m\n" : "%s\n", ents[k].name);
+            if (n < 0) cui_terminal_write(&fm_term, "\x1b[31mls: cannot read this folder\x1b[0m\n", -1);
         } else if (!strcmp(c, "colors")) {
-            for (int k = 0; k < 16; k++) cui_terminal_printf(&term, "\x1b[%dm\xe2\x96\x88\xe2\x96\x88\x1b[0m%s", k < 8 ? 30 + k : 82 + k, k == 7 || k == 15 ? "\n" : " ");
+            for (int k = 0; k < 16; k++) cui_terminal_printf(&fm_term, "\x1b[%dm\xe2\x96\x88\xe2\x96\x88\x1b[0m%s", k < 8 ? 30 + k : 82 + k, k == 7 || k == 15 ? "\n" : " ");
         } else if (!strcmp(c, "build")) {
             for (int k = 0; k <= 20; k++) {
                 char bar[96];
                 int m = 0;
                 for (int j = 0; j < 20; j++) m += snprintf(bar + m, sizeof bar - m, "%s", j < k ? "\xe2\x96\x88" : "\xe2\x96\x91");
-                cui_terminal_printf(&term, "\r\x1b[32m%s\x1b[0m %3d%%", bar, k * 5);
+                cui_terminal_printf(&fm_term, "\r\x1b[32m%s\x1b[0m %3d%%", bar, k * 5);
             }
-            cui_terminal_write(&term, "\n\x1b[32mdone\x1b[0m\n", -1);
-        } else if (!strncmp(c, "echo", 4) && (c[4] == ' ' || !c[4])) cui_terminal_printf(&term, "%s\n", c[4] ? c + 5 : "");
-        else if (!strcmp(c, "clear")) cui_terminal_clear(&term);
-        else if (c[0]) cui_terminal_printf(&term, "\x1b[31m%s: command not found\x1b[0m\n", c);
+            cui_terminal_write(&fm_term, "\n\x1b[32mdone\x1b[0m\n", -1);
+        } else if (!strncmp(c, "echo", 4) && (c[4] == ' ' || !c[4])) cui_terminal_printf(&fm_term, "%s\n", c[4] ? c + 5 : "");
+        else if (!strcmp(c, "clear")) cui_terminal_clear(&fm_term);
+        else if (c[0]) cui_terminal_printf(&fm_term, "\x1b[31m%s: command not found\x1b[0m\n", c);
     }
     if (tr.interrupt) cui_toast(ui, "Interrupted");
 }
+
+static void page_files(cui_ctx *ui) {
+    static bool open_dlg, save_dlg;
+    section(ui, "File browser", "Double-click to open; type to jump; Backspace goes up.");
+    gallery_more_file_browser(ui);
+    cui_row(ui, .gap = 8, .align = CUI_ALIGN_CENTER, .wrap = true) {
+        if (cui_button(ui, "Open\xe2\x80\xa6", .icon = CUI_ICON_FOLDER_OPEN)) open_dlg = true;
+        if (cui_button(ui, "Save as\xe2\x80\xa6", .icon = CUI_ICON_DOWNLOAD)) save_dlg = true;
+        if (gallery_more_chosen_path()[0]) cui_muted(ui, gallery_more_chosen_path());
+    }
+    gallery_more_file_pickers(ui, &open_dlg, &save_dlg);
+    section(ui, "Terminal", "Colors, \\r progress, history on Up and Down, Ctrl+C, Ctrl+L, drag to select.");
+    gallery_more_terminal(ui);
+}
+
 
 /* ---- developer tools ----------------------------------------------------- */
 
@@ -1327,7 +1362,7 @@ static const cui_commit cg_commits[] = {
     { "0aa4c9e8", "Right to left layout", "Omid Saadat", "5 days ago", NULL, { -1, -1 } },
 };
 static int cg_sel = 1;
-static void devtools_commits(cui_ctx *ui) {
+void gallery_more_commit_graph(cui_ctx *ui) {
     cui_column(ui, .gap = 10, .width = CUI_FILL, .max_width = 920) {
         cui_commit_graph(ui, "history", cg_commits, (int)(sizeof cg_commits / sizeof cg_commits[0]), .selected = &cg_sel, .height = 320);
     }
@@ -1340,7 +1375,7 @@ static const cui_graph_node gv_nodes[] = {
 };
 static const cui_graph_edge gv_edges[] = { { 0, 1 }, { 0, 2 }, { 0, 3 }, { 1, 4 }, { 1, 5 }, { 1, 8 }, { 2, 6 }, { 2, 7 }, { 3, 7 }, { 5, 7 }, { 4, 8 } };
 static int gv_sel = 1;
-static void devtools_graph(cui_ctx *ui) {
+void gallery_more_graph_view(cui_ctx *ui) {
     cui_column(ui, .gap = 10, .width = CUI_FILL, .max_width = 1000) {
         cui_graph_view(ui, "deps", gv_nodes, 9, gv_edges, 11, .selected = &gv_sel, .height = 340);
     }
@@ -1359,7 +1394,7 @@ static const cui_net_request wf_reqs[] = {
     { "https://analytics.example.org/collect", "POST", 0, "ping", 0, 0.702, { 0.004, 0.026, 0.031, 0.036, 0.12, 0 } },
 };
 static int wf_sel = 2;
-static void devtools_waterfall(cui_ctx *ui) {
+void gallery_more_waterfall(cui_ctx *ui) {
     cui_column(ui, .gap = 10, .width = CUI_FILL, .max_width = 1000) {
         cui_waterfall(ui, "net", wf_reqs, (int)(sizeof wf_reqs / sizeof wf_reqs[0]), .selected = &wf_sel, .height = 340, .dom_loaded = 0.395, .loaded = 0.68);
     }
@@ -1395,7 +1430,7 @@ static void tr_build(void) {
     cui_trace_sort(tr_spans, tr_n);
 }
 static const cui_trace_marker tr_marks[] = { { "vsync", 0.0, CUI_TONE_NEUTRAL }, { "vsync", 0.0166, CUI_TONE_NEUTRAL }, { "GC pause", 0.0273, CUI_TONE_WARNING }, { "vsync", 0.0332, CUI_TONE_NEUTRAL } };
-static void devtools_trace(cui_ctx *ui) {
+void gallery_more_trace(cui_ctx *ui) {
     if (!tr_n) tr_build();
     if (tr_sel < 0) for (int i = 0; i < tr_n; i++) if (!strcmp(tr_spans[i].name, "Update") && tr_spans[i].start > 0.016 && tr_spans[i].start < 0.03) tr_sel = i;
     cui_column(ui, .gap = 10, .width = CUI_FILL, .max_width = 1000) {
@@ -1405,13 +1440,13 @@ static void devtools_trace(cui_ctx *ui) {
 
 static void page_devtools(cui_ctx *ui) {
     section(ui, "Trace viewer", "Wheel zooms, drag pans, Shift+drag measures, a lane's name folds it.");
-    devtools_trace(ui);
+    gallery_more_trace(ui);
     section(ui, "Network waterfall", "Hover a bar for its timing; Up and Down move the selection.");
-    devtools_waterfall(ui);
+    gallery_more_waterfall(ui);
     section(ui, "Dependency graph", "Hover a node to light up its neighbours; wheel zooms, F fits.");
-    devtools_graph(ui);
+    gallery_more_graph_view(ui);
     section(ui, "Commit graph", "Branch lanes, merges and refs; only the rows in view are built.");
-    devtools_commits(ui);
+    gallery_more_commit_graph(ui);
     section(ui, "Pipeline", "Stages of jobs; a stage sums up its jobs.");
     devtools_pipeline(ui);
     section(ui, "Problems", "Grouped by file; filter by severity or text, Enter opens.");
@@ -1481,7 +1516,7 @@ static void devtools2_request(cui_ctx *ui) {
 }
 
 static float up_api[90], up_web[90], up_db[90], up_cdn[90];
-static void devtools2_uptime(cui_ctx *ui) {
+void gallery_more_uptime(cui_ctx *ui) {
     static bool init;
     if (!init) {
         init = true;
@@ -1503,7 +1538,7 @@ static void devtools2_uptime(cui_ctx *ui) {
 
 static float th_info[96], th_warn[96], th_err[96];
 static double th_s0 = 1794240000 + 3600 * 5, th_s1 = 1794240000 + 3600 * 7.5;
-static void devtools2_histogram(cui_ctx *ui) {
+void gallery_more_time_histogram(cui_ctx *ui) {
     static bool init;
     if (!init) {
         init = true;
@@ -1543,7 +1578,7 @@ static const cui_blame_commit bl_commits[] = {
     { "c3d4e5f6a7", "Priya Nair", "Gaps between children", 1790000000 }, { "d4e5f6a7b8", "Omid Saadat", "Layout entry point", 1793000000 },
     { "e5f6a7b8c9", "Aiko Tanaka", "Measure every node", 1794100000 },
 };
-static void devtools2_blame(cui_ctx *ui) {
+void gallery_more_blame(cui_ctx *ui) {
     cui_column(ui, .gap = 10, .width = CUI_FILL, .max_width = 900) {
         cui_blame(ui, "blame", bl_lines, bl_commit, 15, bl_commits, 5, .lang = "c", .now = 1794211200, .height = 320, .first_line = 120);
     }
@@ -1583,7 +1618,7 @@ static void page_devtools2(cui_ctx *ui) {
     section(ui, "Stack trace", "Library frames fold; a frame with source opens; copy the trace.");
     devtools2_stack(ui);
     section(ui, "Blame", "Hover the gutter to mark a commit's lines; click it to open the commit.");
-    devtools2_blame(ui);
+    gallery_more_blame(ui);
     section(ui, "Coverage", "Folders sum up their files; click a column to sort.");
     devtools2_coverage(ui);
     section(ui, "Regex tester", "Matches and groups are marked as you type.");
@@ -1595,9 +1630,9 @@ static void page_devtools2(cui_ctx *ui) {
     section(ui, "Feature flags", "A switch per environment; click a share to change it.");
     devtools2_flags(ui);
     section(ui, "Uptime", "One bar per day; hover for the day.");
-    devtools2_uptime(ui);
+    gallery_more_uptime(ui);
     section(ui, "Time histogram", "Drag to select a range; click to clear it.");
-    devtools2_histogram(ui);
+    gallery_more_time_histogram(ui);
 }
 
 /* ---- instruments ---------------------------------------------------------- */
@@ -1770,6 +1805,56 @@ static cui_texture canvas_picture(cui_ctx *ui) {
     return held->tex;
 }
 
+cui_texture gallery_more_canvas_picture(cui_ctx *ui) { return canvas_picture(ui); }
+
+void gallery_more_scene(unsigned char *px, int w, int h, bool color) { make_scene(px, w, h, color); }
+
+/* The picture card and the file list of the canvas page: both need state that
+ * outlives a frame, so they live here and examples/gallery.xml places them with
+ * tags the gallery host registers. */
+static bool saved;
+static int scale = 1, type;
+static const char *const scales[] = { "1x", "2x", "4x" }, *const types[] = { "PNG", "JPG", "WEBP" };
+static bool picked[5] = { true, true, true, false, false };
+static const char *names[] = { "hero-dark.png", "hero-light.png", "social-card.png", "icon-512.png", "thumb@2x.png" };
+static const char *sizes[] = { "2.4 MB", "2.3 MB", "812 KB", "96 KB", "140 KB" };
+static const cui_selection_action acts[] = { { CUI_ICON_MOVE, "Move" }, { CUI_ICON_COPY, "Copy" }, { CUI_ICON_TRASH_2, "Delete", CUI_TONE_DANGER } };
+
+void gallery_more_result_card(cui_ctx *ui) {
+    cui_column(ui, .gap = 10, .align = CUI_ALIGN_CENTER, .min_width = 360) {   /* room for the whole action bar */
+        cui_result_card(ui, "canvas-result", canvas_picture(ui), "Final result", .caption = "Minimal illustration, soft gradients and smooth shapes against a clear sky",
+                        .badge = "Done in 4.2 s", .image_w = 288, .image_h = 360, .width = CUI_PX(344));
+        cui_toolbar(ui, "canvas-result-actions", .style = CUI_TOOLBAR_FLOATING) {
+            cui_toolbar_button(ui, CUI_ICON_MAXIMIZE_2, .tooltip = "Expand");
+            cui_toolbar_button(ui, CUI_ICON_BOOKMARK, .tooltip = "Save", .toggle = &saved, .tone = CUI_TONE_WARNING);
+            cui_toolbar_button(ui, CUI_ICON_COPY, .tooltip = "Copy");
+            cui_toolbar_button(ui, CUI_ICON_PANEL_LEFT, .tooltip = "Compare");
+            cui_toolbar_separator(ui);
+            cui_toolbar_cycle(ui, "scale", scales, 3, &scale, .tooltip = "Scale");
+            cui_toolbar_cycle(ui, "type", types, 3, &type, .tooltip = "Format");
+            cui_toolbar_separator(ui);
+            cui_toolbar_button(ui, CUI_ICON_DOWNLOAD, .tooltip = "Download");
+        }
+    }
+}
+
+void gallery_more_canvas_files(cui_ctx *ui) {
+    cui_column(ui, .id = "canvas-files", .width = CUI_FILL, .min_width = 280, .max_width = 520, .pad = 4, .gap = 2, .bg = CUI_COLOR_SURFACE, .border = 1, .radius = 14) {
+        for (int k = 0; k < 5; k++) {
+            cui_push_id_int(ui, k);
+            cui_row(ui, .width = CUI_FILL, .height = CUI_PX(44), .pad_x = 10, .gap = 12, .align = CUI_ALIGN_CENTER, .radius = 10,
+                    .bg = picked[k] ? CUI_COLOR_ACCENT_SUBTLE : (cui_color){ 0 }) {
+                cui_checkbox(ui, "##pick", &picked[k]);
+                cui_icon(ui, CUI_ICON_IMAGE, 15, cui_color_of(ui, CUI_COLOR_TEXT_MUTED));
+                cui_box(ui, .width = CUI_FILL) { cui_label(ui, names[k]); }
+                cui_text(ui, sizes[k], .size = 12, .color = CUI_COLOR_TEXT_MUTED, .tabular = true);
+            }
+            cui_pop_id(ui);
+        }
+    }
+    cui_selection_bar(ui, "canvas-bulk", 0, acts, 3, .selected = picked, .item_count = 5, .anchor = cui_make_id(ui, "canvas-files"));
+}
+
 static void page_canvas(cui_ctx *ui) {
     section(ui, "Grouped toolbar", "Raised groups in one pill, an inset set of modes and a primary action. Narrow the window and the end folds into the \xe2\x80\x9cmore\xe2\x80\x9d menu.");
     static bool numbers = true, bold, italic;
@@ -1842,43 +1927,9 @@ static void page_canvas(cui_ctx *ui) {
     }
 
     section(ui, "Result card and selection bar", "A picture with its status and caption, and its actions in a floating toolbar. Tick files and a bar slides up; Esc clears.");
-    static bool saved;
-    static int scale = 1, type;
-    static const char *const scales[] = { "1x", "2x", "4x" }, *const types[] = { "PNG", "JPG", "WEBP" };
-    static bool picked[5] = { true, true, true, false, false };
-    static const char *names[] = { "hero-dark.png", "hero-light.png", "social-card.png", "icon-512.png", "thumb@2x.png" };
-    static const char *sizes[] = { "2.4 MB", "2.3 MB", "812 KB", "96 KB", "140 KB" };
-    static const cui_selection_action acts[] = { { CUI_ICON_MOVE, "Move" }, { CUI_ICON_COPY, "Copy" }, { CUI_ICON_TRASH_2, "Delete", CUI_TONE_DANGER } };
     cui_row(ui, .gap = 28, .wrap = true, .align = CUI_ALIGN_START, .width = CUI_FILL, .pad_bottom = 60) {
-        cui_column(ui, .gap = 10, .align = CUI_ALIGN_CENTER, .min_width = 360) {   /* room for the whole action bar */
-            cui_result_card(ui, "canvas-result", canvas_picture(ui), "Final result", .caption = "Minimal illustration, soft gradients and smooth shapes against a clear sky",
-                            .badge = "Done in 4.2 s", .image_w = 288, .image_h = 360, .width = CUI_PX(344));
-            cui_toolbar(ui, "canvas-result-actions", .style = CUI_TOOLBAR_FLOATING) {
-                cui_toolbar_button(ui, CUI_ICON_MAXIMIZE_2, .tooltip = "Expand");
-                cui_toolbar_button(ui, CUI_ICON_BOOKMARK, .tooltip = "Save", .toggle = &saved, .tone = CUI_TONE_WARNING);
-                cui_toolbar_button(ui, CUI_ICON_COPY, .tooltip = "Copy");
-                cui_toolbar_button(ui, CUI_ICON_PANEL_LEFT, .tooltip = "Compare");
-                cui_toolbar_separator(ui);
-                cui_toolbar_cycle(ui, "scale", scales, 3, &scale, .tooltip = "Scale");
-                cui_toolbar_cycle(ui, "type", types, 3, &type, .tooltip = "Format");
-                cui_toolbar_separator(ui);
-                cui_toolbar_button(ui, CUI_ICON_DOWNLOAD, .tooltip = "Download");
-            }
-        }
-        cui_column(ui, .id = "canvas-files", .width = CUI_FILL, .min_width = 280, .max_width = 520, .pad = 4, .gap = 2, .bg = CUI_COLOR_SURFACE, .border = 1, .radius = 14) {
-            for (int k = 0; k < 5; k++) {
-                cui_push_id_int(ui, k);
-                cui_row(ui, .width = CUI_FILL, .height = CUI_PX(44), .pad_x = 10, .gap = 12, .align = CUI_ALIGN_CENTER, .radius = 10,
-                        .bg = picked[k] ? CUI_COLOR_ACCENT_SUBTLE : (cui_color){ 0 }) {
-                    cui_checkbox(ui, "##pick", &picked[k]);
-                    cui_icon(ui, CUI_ICON_IMAGE, 15, cui_color_of(ui, CUI_COLOR_TEXT_MUTED));
-                    cui_box(ui, .width = CUI_FILL) { cui_label(ui, names[k]); }
-                    cui_text(ui, sizes[k], .size = 12, .color = CUI_COLOR_TEXT_MUTED, .tabular = true);
-                }
-                cui_pop_id(ui);
-            }
-        }
-        cui_selection_bar(ui, "canvas-bulk", 0, acts, 3, .selected = picked, .item_count = 5, .anchor = cui_make_id(ui, "canvas-files"));
+        gallery_more_result_card(ui);
+        gallery_more_canvas_files(ui);
     }
 }
 
@@ -1926,6 +1977,8 @@ static void page_voice(cui_ctx *ui) {
     static int call_n = 0;
     static double last = -1, call_start = 0, next_level = 0;
     double now = cui_time(ui);
+    /* the call starts with the page, whatever the window did before */
+    if (cui_frame_count(ui) <= 1) { last = -1; call_start = 0; next_level = 0; call_n = 0; }
     float dt = last < 0 ? 0 : (float)(now - last);
     last = now;
     if (msg_n == 0) {   /* a message that came in earlier */

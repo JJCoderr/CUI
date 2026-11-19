@@ -8,9 +8,9 @@
   sidebar, the top row, the message list, the composer and the workspace panel
   is here. The pieces a document cannot draw itself are tags registered in
   examples/assistant_xml.c: <Answer> (one answer with its reasoning, tool call,
-  text, citations and buttons, which streams while it plays), <ChatMessage>,
-  <ChatComposer>, <ModelPicker>, <ContextMeter>, <Plan>, <PromptSuggestions>,
-  <UserMenu> and <Drawer>. The sidebar is written once as a <Widget> and used
+  text, citations and buttons, which streams while it plays), <Message>,
+  <Composer>, <ModelPicker>, <Context>, <Plan>, <Suggestions>,
+  <AccountMenu> and <Drawer>. The sidebar is written once as a <Widget> and used
   twice: in the window, and inside the drawer a phone-sized window opens, where
   it is as wide as the sheet and has no surface or padding of its own.
 
@@ -64,7 +64,7 @@
       </Card>
       <Box Height="6"/>
 
-      <UserMenu Text="Mara Quinn" Detail="mara@muse.dev" Status="online">
+      <AccountMenu Text="Mara Quinn" Detail="mara@muse.dev" Status="online">
         <MenuItem Text="Settings" Icon="settings"/>
         <MenuItem Text="Keyboard shortcuts" Icon="keyboard"/>
         <MenuSeparator/>
@@ -87,7 +87,7 @@
         <IconButton If="{narrow}" Icon="menu" Tooltip="Chats" OnClicked="drawer"/>
         <ModelPicker Ghost="true" Placement="bottomstart"/>
         <Spacer/>
-        <ContextMeter Used="113400" Limit="200000"/>
+        <Context Used="113400" Limit="200000"/>
         <IconButton If="{narrow}" Icon="share-2" Tooltip="Share"/>
         <Button If="{!narrow}" Text="Share" Icon="share-2" Variant="outline" Size="sm"/>
       </Row>
@@ -98,11 +98,11 @@
         <Row Width="fill" Justify="center" PadX="{narrow ? 12 : 24}"
              PadY="{narrow ? 16 : 24}">
           <Column Width="fill" MaxWidth="760" Gap="14">
-            <ChatMessage Text="Why do immediate mode toolkits feel so fast? Cite a few sources."
+            <Message Text="Why do immediate mode toolkits feel so fast? Cite a few sources."
                          Mine="true"/>
             <Answer Name="first" Live="false"/>
             <Gap Size="12" If="{asked}"/>
-            <ChatMessage Text="{askedText}" Mine="true" If="{asked}"/>
+            <Message Text="{askedText}" Mine="true" If="{asked}"/>
             <Answer Name="second" Live="true" If="{asked}"/>
           </Column>
         </Row>
@@ -111,7 +111,7 @@
       <Row Width="fill" Justify="center" PadX="{narrow ? 12 : 24}"
            PadBottom="{narrow ? 12 : 20}">
         <Column Width="fill" MaxWidth="760" Gap="8">
-          <ChatComposer Placeholder="Ask a follow up" Busy="{busy}"/>
+          <Composer Placeholder="Ask a follow up" Busy="{busy}"/>
           <Text Size="12" Color="textMuted" Align="center" Width="fill">Answers can be wrong. Each one links the sources it used.</Text>
         </Column>
       </Row>
@@ -145,7 +145,7 @@
         </Row>
       </Column>
       <Label>Try asking</Label>
-      <PromptSuggestions Columns="1"/>
+      <Suggestions Columns="1"/>
     </Column>
 
   </Row>

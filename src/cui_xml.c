@@ -401,6 +401,22 @@ static char *cui__xml_read_until_str(cui__xml_reader *r, const char *terminator)
     return out;
 }
 
+/* XML turns CRLF and a lone CR into LF as it reads, so a document written or
+ * checked out on Windows reads exactly as it would anywhere else. It matters for
+ * text a document carries rather than lays out: code, JSON, markdown. */
+static void cui__xml_normalize_breaks(char *s) {
+    char *w = s;
+    for (; *s; s++) {
+        if (*s == '\r') {
+            *w++ = '\n';
+            if (s[1] == '\n') s++;
+        } else {
+            *w++ = *s;
+        }
+    }
+    *w = 0;
+}
+
 static void cui__xml_decode_entities(char *s) {
     char *src = s, *dst = s;
     while (*src) {
@@ -525,7 +541,10 @@ static cui_xml_node *cui__xml_parse_element(cui__xml_reader *r) {
                 value = cui__xml_read_until(r, quote == '"' ? "\"" : "\'");
                 cui__xml_next(r);
             }
-            if (value) cui__xml_decode_entities(value);
+            if (value) {
+                cui__xml_decode_entities(value);
+                cui__xml_normalize_breaks(value);
+            }
             cui__xml_attr_put(node, name, value ? value : "");
             free(name);
             free(value);
@@ -567,6 +586,7 @@ static cui_xml_node *cui__xml_parse_element(cui__xml_reader *r) {
                         cui__xml_match(r, "<![CDATA[");
                         text = cui__xml_read_until_str(r, "]]>");
                         if (text) {
+                            cui__xml_normalize_breaks(text);
                             cui__xml_append(&node->text, &text_len, &text_cap, text, strlen(text));
                             free(text);
                         }
@@ -609,6 +629,7 @@ static cui_xml_node *cui__xml_parse_element(cui__xml_reader *r) {
                 if (chunk) {
                     char *trimmed;
                     cui__xml_decode_entities(chunk);
+                    cui__xml_normalize_breaks(chunk);
                     trimmed = cui__xml_trim(chunk);
                     if (*trimmed) {
                         if (text_len) cui__xml_append(&node->text, &text_len, &text_cap, " ", 1);
@@ -1456,7 +1477,7 @@ int cui__xml_attr_numbers(cui_xml *doc, cui_xml_node *node, const char *name, co
     if (!node) return 0;
     if (!node->nums_parsed) {
         node->nums_parsed = true;
-        s = cui__xml_attr_raw(node, name);
+        s = cui__xml_attr_text(doc, node, name, NULL);
         while (s && *s) {
             char *end;
             double v = strtod(s, &end);

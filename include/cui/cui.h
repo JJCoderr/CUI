@@ -487,6 +487,9 @@ typedef struct cui_scroll_opts {
 CUI_API void cui_scroll_begin(cui_ctx *ui, const cui_scroll_opts *opts);
 CUI_API void cui_scroll_end(cui_ctx *ui);
 CUI_API void cui_scroll_to(cui_ctx *ui, const char *scroll_id, float y);
+/* The same for a scroll area whose id the caller already has (a document knows
+ * the ids of its elements; its nested scopes would hash the name elsewhere). */
+CUI_API void cui_scroll_to_at(cui_ctx *ui, cui_id scroll, float y);
 
 /* Resizable split view: two panes with a draggable divider. `ratio` is the
  * size of the first pane in 0..1. Call cui_split_next between the panes. */
@@ -2749,6 +2752,10 @@ typedef struct cui_toc_item {
 } cui_toc_item;
 CUI_API int cui_toc(cui_ctx *ui, const char *scroll_id, const cui_toc_item *items, int count);
 CUI_API void cui_toc_anchor(cui_ctx *ui, const char *anchor);
+/* The same table of contents, for a scroll area whose id the caller already has:
+ * a document knows the ids of its elements, and its nested scopes would hash the
+ * scroll's name to something else. */
+CUI_API int cui_toc_at(cui_ctx *ui, cui_id scroll, const cui_toc_item *items, int count);
 
 /* ------------------------------------------------------------------------ */
 /* More feedback                                                            */

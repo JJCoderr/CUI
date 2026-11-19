@@ -7,6 +7,8 @@
 #include <cui/cui_render.h>
 #include <cui/cui_xml.h>
 
+#include "../src/cui_internal.h"   /* the nodes one frame built: the nav highlight is one of them */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -537,6 +539,140 @@ static void test_example_document(cui_ctx *ui) {
     CHECK(!cui_xml_node_bool(doc, cui_xml_find(doc, "prefs")));
     cui_xml_free(doc);
 }
+/* A run of nav items described in a document shares one highlight, and it travels
+ * from the item selected to the one that takes over. Each element draws in a scope
+ * of its own, so the group's state id is made in the scope of the list; made in the
+ * item's own, every item would be a group of its own, and the highlight would appear
+ * at the new item instead of gliding to it. */
+static int g_nav_section;
+
+static int nav_highlight_y(cui_ctx *ui, float *y, int cap) {
+    int found = 0;
+    int i;
+    for (i = 0; i < ui->node_count; i++) {
+        if (ui->nodes[i].paint != cui__paint_nav_highlight) continue;
+        if (found < cap) y[found] = ui->nodes[i].rect.y;
+        found++;
+    }
+    return found;
+}
+
+static void test_nav_highlight(cui_ctx *ui) {
+    static const char *text =
+        "<Window Width=\"300\" Height=\"300\"><Column Width=\"200\" Gap=\"2\">"
+        "<NavItem Name=\"one\" Text=\"One\" Group=\"g\" Selected=\"{section == 0}\" OnClicked=\"nav:0\"/>"
+        "<NavItem Name=\"two\" Text=\"Two\" Group=\"g\" Selected=\"{section == 1}\" OnClicked=\"nav:1\"/>"
+        "<NavItem Name=\"three\" Text=\"Three\" Group=\"g\" Selected=\"{section == 2}\" OnClicked=\"nav:2\"/>"
+        "<NavItem Name=\"four\" Text=\"Four\" Group=\"g\" Selected=\"{section == 3}\" OnClicked=\"nav:3\"/>"
+        "</Column></Window>";
+    float y[4], target, moved;
+    cui_xml *doc;
+    cui_set_reduced_motion(ui, false);
+    g_nav_section = 0;
+    doc = cui_xml_parse(text, strlen(text), NULL);
+    CHECK(doc != NULL);
+    if (!doc) return;
+    cui_xml_bind_int(doc, "section", &g_nav_section);
+    run(ui, doc, 4);
+    CHECK(nav_highlight_y(ui, y, 4) == 1);         /* the items are one group, so one highlight */
+    CHECK(y[0] == 0.0f);
+    target = cui_xml_node_rect(cui_xml_find(doc, "four")).y;
+    CHECK(target > 90.0f);                          /* four rows of 32 and their gaps */
+    g_nav_section = 3;
+    run(ui, doc, 1);
+    CHECK(nav_highlight_y(ui, y, 4) == 1);          /* the group did not split into two */
+    run(ui, doc, 1);
+    CHECK(nav_highlight_y(ui, y, 4) == 1);
+    moved = y[0];
+    CHECK(moved > 0.0f);                            /* it left the first item... */
+    CHECK(moved < target - 30.0f);                  /* ...and has not arrived yet */
+    run(ui, doc, 6);
+    CHECK(nav_highlight_y(ui, y, 4) == 1);
+    CHECK(y[0] > moved);                            /* on its way, every frame */
+    CHECK(y[0] < target);
+    run(ui, doc, 40);
+    CHECK(nav_highlight_y(ui, y, 4) == 1);
+    CHECK(y[0] > target - 2.0f && y[0] < target + 2.0f);
+    CHECK(g_nav_section == 3);                      /* a document never moves the value itself */
+    cui_xml_free(doc);
+    cui_set_reduced_motion(ui, true);
+}
+
+/* The social pieces a document can say: a divider, a typing line, a rolling
+ * counter, comments with their hearts, presence avatars and a ticker. */
+/* A checklist marks the step that was clicked, as the C examples do: the tag
+ * owns the boxes, the component only reports what was clicked. */
+static bool done_step_one(void) { return cui_xml_get_bool(g_doc, "s1"); }
+static bool done_step_two(void) { return cui_xml_get_bool(g_doc, "s2"); }
+
+/* A checklist marks the step that was clicked, as the C examples do: the tag owns
+ * the boxes, the component only reports what was clicked. */
+static void test_checklist_click(cui_ctx *ui) {
+    static const char *text =
+        "<Window Width=\"420\" Height=\"300\"><Column Pad=\"10\" Gap=\"10\">"
+        "  <Checklist Name=\"list\" Title=\"Set up\">"
+        "    <Step Name=\"s1\" Description=\"Pick a name and invite your team.\" Action=\"Create\">Create your workspace</Step>"
+        "    <Step Name=\"s2\" Description=\"Link GitHub or GitLab.\" Action=\"Connect\">Connect a repository</Step>"
+        "  </Checklist>"
+        "</Column></Window>";
+    cui_xml *doc = cui_xml_parse(text, strlen(text), NULL);
+    CHECK(doc != NULL);
+    if (!doc) return;
+    g_doc = doc;
+    run(ui, doc, 2);
+    CHECK(!done_step_one());
+    CHECK(!done_step_two());
+    /* the box is a small circle in the row: sweep the card, not its middle line */
+    {
+        cui_rect r = cui_xml_node_rect(cui_xml_find(doc, "list"));
+        float y, x;
+        for (y = r.y + r.h * 0.55f; y < r.y + r.h - 4 && !done_step_two(); y += 6)
+            for (x = r.x + 6; x < r.x + r.w - 4 && !done_step_two(); x += 8) click_at(ui, doc, x, y);
+    }
+    /* the component reports the step it acted on (the open one); whichever it is,
+     * the box has to end up ticked, which is what the C examples do */
+    CHECK(done_step_one() || done_step_two());
+    g_doc = NULL;
+    cui_xml_free(doc);
+}
+
+static void test_social_tags(cui_ctx *ui) {
+    static const char *text =
+        "<Window Width=\"640\" Height=\"420\"><Column Gap=\"10\" Pad=\"10\">"
+        "  <ChatDivider Name=\"div\">Today</ChatDivider>"
+        "  <TypingIndicator Name=\"typing\">Jonas</TypingIndicator>"
+        "  <Counter Name=\"count\" Value=\"48210\" Format=\"$%.0f\" GroupThousands=\"true\"/>"
+        "  <Comment Name=\"c1\" Author=\"Tomas Rivera\" Time=\"2h\" Badge=\"Author\" Likes=\"12\" Liked=\"true\">The numbers match the staging run.</Comment>"
+        "  <Comment Name=\"c2\" Author=\"Priya Nair\" Depth=\"1\" Likes=\"3\">Agreed.</Comment>"
+        "  <Presence Name=\"here\" Users=\"Maya Okafor:#7c5cff|Jonas Berg:#22c58b:away|Priya Nair:#f59e0b\""
+        "            Visible=\"5\" Size=\"30\"/>"
+        "  <Ticker Name=\"tick\" Items=\"Revenue:$48.2k:6.9|Churn:1.7%:-0.6:lower|Uptime:99.98%:0\"/>"
+        "  <CardStack Name=\"deck\" Count=\"3\" Width=\"200\" Height=\"150\">"
+        "    <CardStackItem><Text>Kyoto</Text></CardStackItem>"
+        "    <CardStackItem><Text>Lisbon</Text></CardStackItem>"
+        "    <CardStackItem><Text>Reykjavik</Text></CardStackItem>"
+        "  </CardStack>"
+        "</Column></Window>";
+    cui_xml *doc = cui_xml_parse(text, strlen(text), NULL);
+    CHECK(doc != NULL);
+    if (!doc) return;
+    run(ui, doc, 2);
+    CHECK(cui_xml_ok(doc));
+    if (!cui_xml_ok(doc)) printf("  social: %s\n", cui_xml_last_error(doc));
+    /* a divider and a typing line are decoration: the library leaves them without
+     * an id, so they are found by name and not asked for a rectangle */
+    CHECK(cui_xml_find(doc, "div") != NULL);
+    CHECK(cui_xml_find(doc, "typing") != NULL);
+    CHECK(cui_xml_node_id(cui_xml_find(doc, "count")) != 0);
+    CHECK(cui_xml_node_id(cui_xml_find(doc, "c1")) != 0);
+    CHECK(cui_xml_node_id(cui_xml_find(doc, "c2")) != 0);
+    CHECK(cui_xml_node_id(cui_xml_find(doc, "here")) != 0);
+    CHECK(cui_xml_node_id(cui_xml_find(doc, "tick")) != 0);
+    CHECK(cui_xml_node_rect(cui_xml_find(doc, "tick")).h > 0);
+    CHECK(cui_xml_node_id(cui_xml_find(doc, "deck")) != 0);
+    cui_xml_free(doc);
+}
+
 int main(int argc, char **argv) {
     const char *dir = argc > 1 ? argv[1] : ".";
     cui_sw_renderer *sw = cui_sw_create();
@@ -577,7 +713,10 @@ int main(int argc, char **argv) {
     test_include_and_widgets_file(dir);
     test_reload(dir);
     test_colors_and_tags(ui);
+    test_social_tags(ui);
+    test_checklist_click(ui);
     test_example_document(ui);
+    test_nav_highlight(ui);
 
     cui_xml_free(doc);
     cui_destroy(ui);

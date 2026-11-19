@@ -33,7 +33,7 @@ The pieces this page covers:
 - [Rules](#rules)
 - [Value types](#value-types)
 - [Values, bindings and actions](#values-bindings-and-actions)
-- [The elements](#the-elements) 鈥?containers, text, controls, display, chrome, logic
+- [The elements](#the-elements) —containers, text, controls, display, chrome, logic
 - [Tags of your own](#tags-of-your-own)
 - [Repeat, ForEach, If and Include](#repeat-foreach-if-and-include)
 - [Following the file](#following-the-file)
@@ -44,7 +44,7 @@ The pieces this page covers:
 
 CUI is immediate mode: the app describes its interface every frame. A document
 is the same, written once and read every frame. Nothing is retained except what
-each element holds 鈥?a switch's value, the text of a field, the open tab 鈥?and
+each element holds —a switch's value, the text of a field, the open tab —and
 that lives in the document, keyed by the element's `Name`, so it survives the
 frames and the reloads.
 
@@ -217,13 +217,168 @@ height in a column; `Width="50%"` takes half of the parent.
 | `Select` | the selected index | `Label`, `Placeholder`, `Searchable`, `Items` or `<Item>` children, `Icons` |
 | `Segmented` | the selected index | `Size`, `FullWidth`, entries, `Icons` |
 | `Tabs` | the selected index | `Variant` (`underline`/`pill`), entries, `Icons` |
-| `NavItem` | fires `OnClicked` | `Icon`, `Badge`, `Selected`, `Group` |
+| `NavItem` | fires `OnClicked`; the items of one `Group` share one highlight, which glides from item to item | `Icon`, `Badge`, `Selected`, `Group` |
 | `NavSection` | a small heading | |
+| `Toc` | the section in view; clicking scrolls there | `Scroll` names the `Scroll` it follows, `<TocItem>` children |
+| `TocItem` | one entry of a `Toc` | `Anchor`, `Level` |
+| `TocAnchor` | where a section starts inside that scroll area | `Anchor` |
+| `InlineEdit` | text, edited where it stands | `Font`, `Size`, `Placeholder` |
+| `Scrub` | a number, dragged sideways | `Min`, `Max`, `Value`, `Step`, `Format`, `Suffix` |
+| `MoneyInput` | an amount | `Label`, `Value`, `Symbol`, `Code`, `Decimals`, `Hint` |
+| `ShortcutRecorder` | a key combination | `Shortcut`, `Placeholder` |
+| `EmojiPicker` | reports the emoji picked | `Height`, `Size`, `Tone`, `NoSearch` |
+| `DotChart` | reports clicks with their x | `Height`, `XMin`, `XMax`, `XUnits`, `XStep`, `Min`, `Max`, `Unit`, `Pitch`, `NoAxis`, `<Series>` and `<Annotation>` children |
+| `Annotation` | a line or a point over a chart | `Axis` (`x`/`y`/`point`), `At`, `Value`, `Detail`, `Accent` |
+| `EventTrack` | moments the user drags, adds and removes | `Values`, `Min`, `Max`, `Step`, `Units`, `LabelStep`, `Selected`, `NoAdd`, `NoRemove` |
+| `HoverCard` | a panel that appears while the pointer rests on it | `Width`, `Placement`, `Delay`, children |
+| `ConfirmPopover` | a question anchored to the element before it; `OnClicked` when confirmed | `Title`, `Description`, `ConfirmLabel`, `CancelLabel`, `Danger` |
+| `ExpandableText` | text clamped to a few lines, with Show more | `Lines`, `Size` |
+| `ExpandableCard` | a card whose header opens its children | `Open`, `Description`, `Icon`, `Badge`, `BadgeTone` |
+| `Countdown` | digits counting down | `Seconds`, `HideDays`, `Compact` |
+| `Checklist` | an onboarding card, with `<Step>` children | `Title`, `Description` |
+| `Step` | one step of a `Checklist` | `Description`, `Action`, `Done` |
+| `Veil` | covers its children with dots until `Revealed` | `Revealed`, `Label`, `Hint`, `Toggle`, `Radius` |
+| `SplitButton` | reports the menu entry chosen | `Items`, `Icons`, `Variant`, `Icon` |
+| `ToggleGroup` | the toggles that are on | `Items`, `Icons`, `On`, `IconOnly`, `Exclusive` |
+| `ConfirmButton` | `OnClicked` once confirmed | `ConfirmLabel`, `Timeout`, `Icon`, `Variant` |
+| `StatusButton` | `OnClicked` while idle | `Status`, `SuccessLabel`, `BusyLabel`, `ErrorLabel`, `Icon` |
+| `Reactions` | the pills the user reacted with | `Items` (`icon:count[:on]`) |
+| `ThemeSwitcher` | the theme mode | `Mode`, `System` |
+| `ThemeToggle` | switches light and dark | |
+| `UserMenu` | a menu of account actions around its children | `Detail`, `Status`, `Compact`, `Placement` |
+| `SwipeItem` | the action swiped to, in `OnClicked` | `Left`, `Right` (`icon:label:tone`) |
+| `SpeedDial` | reports the action chosen | `Items` (`icon:label`), `Tooltip`, `Icon` |
+| `MultiSelect` | the items chosen | `Items`, `On`, `Label`, `Placeholder`, `Searchable`, `MaxChips` |
+| `DateRangePicker` | a start and an end date | `From`, `To`, `NoPresets`, `Width` |
+| `RangeCalendar` | the range picked in one or two months | `From`, `To`, `Months` |
+| `TimePicker` | a time | `Hour`, `Minute`, `TwelveHour`, `MinuteStep` |
+| `TimeDial` | a time set on a clock face | `Hour`, `Minute`, `Size` |
+| `WheelPicker` | the index on the drum | `Items`, `Value`, `Rows`, `Loop`, `JoinLeft`, `JoinRight` |
+| `RulerSlider` | a number on a tape measure | `Min`, `Max`, `Value`, `Step`, `MajorEvery`, `Spacing`, `Unit` |
+| `HistogramSlider` | the two ends of a range | `Values`, `Min`, `Max`, `Low`, `High` |
+| `ChatMessage` | one message of a conversation | `Mine`, `Author`, `Time`, `Status`, `Grouped`, `LastInGroup`, `Markdown` |
+| `Reasoning` | what the model thought, folded away | `Thinking`, `Seconds`, `Title`, children |
+| `ToolCall` | one tool call, with its input and output | `Status`, `Icon`, `Detail`, `Input`, `Output`, `Seconds` |
+| `AgentStatus` | what the agent is doing now | `Status`, `Seconds`, `Icon` |
+| `Typewriter` | text that types itself in | `Size`, `Speed`, `Delay` |
+| `Citation` | a number that shows one source on hover | `Number`, `From` (a SourceList's Name), `Index` |
+| `SourceList` | the documents an answer used | `<Source>` children |
+| `Source` | one document | `Title`, `URL`, `Snippet` |
+| `ResponseActions` | copy, regenerate, vote and share | `CopyText`, `NoRegenerate`, `NoShare` |
+| `ContextMeter` | how full the context is | `Used`, `Limit`, `Unit`, `<Part>` children |
+| `ChatComposer` | a growing field with attachments and models | `Placeholder`, `Busy`, `Attachments`, `Models`, `Model` |
+| `AgentPlan` | steps with their status | `Title`, `<PlanStep>` children |
+| `PlanStep` | one step | `Detail`, `Status` |
+| `PromptSuggestions` | cards to start a conversation with | `Columns`, `<Suggestion>` children |
+| `Suggestion` | one card | `Icon`, `Detail` |
+| `Knob` | a number turned by dragging | `Min`, `Max`, `Value`, `Unit`, `Format`, `Size`, `Reset`, `LogScale`, `Bipolar` |
+| `Fader` | a number on a track, with a level meter beside it | `Min`, `Max`, `Value`, `Length`, `Ticks`, `Meter`, `Horizontal` |
+| `LevelMeter` | bars that follow the levels given each frame | `Levels`, `Length`, `Horizontal`, `Scale`, `Segmented` |
+| `Tour` | a guided tour of elements by name | `Step`, `Width`, `<TourStep>` children |
+| `TourStep` | one step of a `Tour` | `Target`, `Description`, `Placement` |
+| `RatioSlider` | the share between two named parts | `First`, `Second`, `Value`, `Tone`, `Step`, `Height` |
+| `GradientSlider` | a number on a track that shows it | `Min`, `Max`, `Value`, `Track` (`hue`/`temperature`/`opacity`), `Step`, `Swatch`, `Icon`, `Tooltip`, `Color` |
+| `StepSlider` | an index that snaps to a few stops | `Min`, `Max`, `Value`, `Icon`, `Tooltip`, `ValueText` |
+| `PaletteStrip` | the colors and what is locked | `Colors`, `Locked`, `Seed`, `ValueText`, `NoShuffle` |
+| `AspectPicker` | the ratio chosen | `Value`, `Custom`, `CustomLabel`, `Base`, `ValueText` |
+| `OptionAction` | the option chosen; `OnClicked` for its action | `Items`, `Value`, `Icon`, `Tooltip`, `ValueText` |
+| `SeedField` | a seed and its lock | `Value`, `Locked`, `ValueText`, `RandomText`, `FixedText` |
+| `FormatBar` | color, weight, style, alignment and lists | `Tone`, `Bold`, `Underline`, `Link`, `Style`, `Size`, `Align`, `List` |
+| `NodeEditor` | a canvas of nodes joined by links | `Height`, `MinZoom`, `MaxZoom`, `NoGrid`, `Minimap`, `<Node>`, `<NodeLink>` children |
+| `Node` | one node | `Width`, `Icon`, with `<NodeInput>`, `<NodeOutput>` and `<NodeContent>` children |
+| `NodeInput` / `NodeOutput` | a pin | `Pin`, `Type` |
+| `NodeContent` | the row of a node that holds components | its children |
+| `NodeLink` | a link between two pins | `Link`, `From`, `To` |
+| `SelectionRing` | someone else's selection around what it follows | `Color`, `Name` |
+| `CanvasControls` | a zoom rail over the previous component | `Content` (`x,y,w,h`), `NoFit`, `StartSide`, `<CanvasToggle>` children |
+| `CanvasToggle` | one switch of the rail | `Icon`, `Text`, `On` |
+| `LiveCursors` | other people's pointers | `Users` (`Name:tone[:speaking]`), `View` from the canvas |
+| `PresencePill` | who is here | `Users`, `Size`, `Visible` |
+| `Loader` | a looping wait | `Style` (`dots`/`bars`/`pulse`/`orbit`/`grid`), `Size` |
+| `ShimmerText` | text with a highlight sweeping across it | `Size`, `Speed` |
+| `TextReveal` | words that rise into place | `Size`, `Font`, `Delay` |
+| `WordRotate` | one word at a time | `Words`, `Interval`, `Size`, `Font` |
+| `GradientText` | text painted with a gradient | `From`, `To`, `Animate`, `Size`, `Font` |
+| `Spotlight` | a card with a light that follows the pointer | `Fill`, `Beam`, `Pad`, `Color` |
+| `Dock` | a row of icons that magnify | `Size`, `Magnify`, `<DockItem>` children |
+| `DockItem` | one icon | `Icon`, `Color`, `Running`, `Badge` |
+| `DockSeparator` | a line between groups | |
+| `ControlTile` | a large toggle | `On`, `Icon`, `Detail`, `Wide`, `Width` |
+| `NowPlaying` | artwork, a scrubber and transport | `Title`, `Artist`, `ArtColor`, `Position`, `Duration`, `Playing` |
+| `Waveform` | bars from peaks, seekable | `Values`, `Progress`, `Height` |
+| `TabBar` | a bottom tab bar | `Selected`, `Width`, `<TabItem>` children |
+| `TabItem` | one tab | `Icon`, `Badge` |
+| `Treemap` | rectangles by value | `Height`, `Format`, `<Part>` children |
+| `Funnel` | narrowing stages | `Format`, `<Part>` children |
+| `SplitBar` | one bar split into parts | `Format`, `NoLegend`, `<Part>` children |
+| `Waffle` | a grid of squares by share | `Cell`, `Columns`, `Rows`, `<Part>` children |
+| `BarList` | ranked bars | `Format`, `MaxRows`, `KeepOrder`, `<Part>` children |
+| `ActivityRings` | concentric rings | `Size`, `Center`, `Caption`, `<Part>` children |
+| `Heatmap` | cells from `Values`, `Rows` and `Cols` | `RowLabels`, `ColLabels`, `ColLabelStep`, `Format` |
+| `CalendarHeatmap` | a year of activity | `Values`, `Days`, `Start`, `Unit` |
+| `RadialGauge` | a value on an arc | `Value`, `Min`, `Max`, `Label`, `Unit`, `Format`, `Detail`, `Style`, `Bands`, `Target`, `ShowTarget` |
+| `Radar` | series over shared axes | `Axes`, `Size`, `Max`, `<Series>` children |
+| `Scatter` | points per series | `Height`, `XLabel`, `YLabel`, `<Series Points="x,y;..." Sizes="...">` children |
+| `Sankey` | flows between named nodes | `Nodes`, `Links` (`from-to:value`), `Height` |
+| `Kanban` | a board; `OnChanged` when a card is dropped | `<KanbanColumn>` children |
+| `KanbanColumn` | one column | `Dot`, `Limit`, `Width`, `<KanbanCard>` children |
+| `KanbanCard` | one card | `Card` (its id), children are its content |
+| `WeekCalendar` | seven days of events | `StartHour`, `EndHour`, `Height`, `<Event>` children |
+| `Event` | one event | `Day`, `Start`, `End`, `Detail`, `Tone` |
+| `Gantt` | a plan of bars | `Days`, `Today`, `Height`, `<Task>` children |
+| `Task` | one bar | `Owner`, `Start`, `End`, `Progress`, `DependsOn`, `Milestone` |
+| `MonthCalendar` | a month grid | `<MonthEvent>` children |
+| `MonthEvent` | one event | `Day`, `Span`, `Time`, `AllDay`, `Tone` |
+| `VoiceNote` | a recorded message with its waveform | `Levels`, `Mine`, `Duration`, `Position`, `Speed`, `Playing` |
+| `VoiceWave` | a strip of levels, one column each | `Levels`, `Owners`, `Clip`, `Seek`, `Progress`, `Pitch`, `Reply` |
+| `VoiceSession` | a spoken conversation with its transcript | `State`, `Levels`, `Owners`, `Transcript`, `Upcoming`, `Reply`, `Muted`, `NoEnd` |
+| `ChatDivider` | a line with a label between groups of messages | its text |
+| `TypingIndicator` | bouncing dots under the last message | the name, e.g. `Jonas` |
+| `Comment` | one comment, its likes and its badge | `Author`, `Time`, `Depth`, `Likes`, `Liked`, `Edited`, `Badge` |
+| `Presence` | overlapping avatars of who is here | `Users` (`Name:#rrggbb[:away]`), `Visible`, `Size` |
+| `Counter` | a figure whose changed digits roll | `Value`, `Format`, `Size`, `GroupThousands` |
+| `Ticker` | a strip of figures scrolling by | `Items` (`Label:Value:Delta[:lower]`), `Speed`, `Height` |
+| `CardStack` | cards a flick throws away | `Count`, `Width`, `Height`, `Visible`, `<CardStackItem>` children |
+| `CardStackItem` | one card of a `CardStack` | its children are the card
 | `Breadcrumb` | reports the clicked index | entries |
 | `Pagination` | the page, 0 based | `PageCount` |
 | `Stepper` | shows the current step | `Current`, entries |
 | `DocTabs` | the selected index | `Shortcuts`, `NoClose`, `NoReorder`, `<Tab>` children |
 | `Carousel` | the selected slide | `<Slide>` children |
+| `Slide` | one slide of a `Carousel` | its children are the slide |
+| `FilterBar` | a search field and chips; holds what is chosen and typed | `Selected` (`5,0,0` masks), `Search`, `<Field>` children |
+| `Field` | one filter of a `FilterBar` | `Icon`, `Options` (separated by `\|`) |
+| `TreeTable` | a table with disclosure and indentation | `Columns` (`Name:fill:left\|Files:80:right`), `<TreeRow>` children |
+| `TreeRow` | one row of a `TreeTable` | `Depth`, `Open`, `Icon`, `Cells` (the other columns, `\|`) |
+| `Problems` | diagnostics grouped by file | `Height`, `<Diagnostic>` children |
+| `Diagnostic` | one diagnostic | `Severity`, `File`, `Line`, `Column`, `Source`, `Code` |
+| `KvEditor` | key and value rows; holds the pairs | `<Pair>` children |
+| `Pair` | one pair | `Key`, `Value`, `Enabled`, `Secret` |
+| `Pipeline` | stages with their jobs | `Selected`, `<Stage>` and `<Job>` children |
+| `Stage` | one stage name | its text |
+| `Job` | one job | `Stage`, `Status`, `Duration`, `AllowFailure` |
+| `QueryBuilder` | nested groups over fields | `Sentence`, `<Field>`, `<Condition>` children |
+| `Condition` | a group or a rule | `Depth`, `Group` (`all`/`any`), `Field`, `Op`, `Value` |
+| `SchedulePicker` | a cron expression, edited friendly | `Cron`, `Now`, `Utc`, `NextCount` |
+| `Keymap` | a keyboard of shortcuts | `Mods`, `<Category>`, `<Binding>` children |
+| `Binding` | one shortcut | `Keys` (`primary+s`, `f5`), `Category` |
+| `Category` | one category name | its text |
+| `TestExplorer` | suites and tests | `Height`, `<Test>` children |
+| `Test` | one suite or test | `Depth`, `Status`, `Duration`, `Message` |
+| `StackTrace` | an exception and its frames | `Title`, `Message`, `Lang`, `<Frame>` children |
+| `Frame` | one frame | `File`, `Line`, `Column`, `Library`, `Source`, `First` |
+| `RequestBar` | the method, the URL and Send | `Method`, `Url` |
+| `ResponseStatus` | a response in one line | `Code`, `Time`, `Size` |
+| `UrlParams` | a URL's query as pairs; holds them | `Url` |
+| `Coverage` | coverage per file | `Height`, `<CoverageFile>` children |
+| `CoverageFile` | one file | `Lines`, `LinesHit`, `Branches`, `BranchesHit`, `Functions`, `FunctionsHit` |
+| `FeatureFlags` | a switch per environment | `<Env>` and `<Flag>` children |
+| `Flag` | one flag | `Description`, `Envs` (`on,on,off`), `Rollouts` |
+| `Env` | one environment name | its text |
+| `ApiExplorer` | endpoints by tag | `Selected`, `<Endpoint>` children |
+| `Endpoint` | one endpoint | `Method`, `Path`, `Category`, `Deprecated`, `<Param>` children |
+| `Param` | one parameter | `In`, `Type`, `Required`, `Description` |
+| `RegexTester` | a pattern and a sample text | `Pattern`, `Text`, `Height` |
 | `ButtonGroup` | buttons drawn connected, on one well | `<Button>` children |
 | `CopyButton` | an icon button that copies `Copy`, or its text | `Copy` |
 | `HoldButton` | fires `OnClicked` once the button is held full | `Duration`, `Icon`, `Variant` |
@@ -233,6 +388,9 @@ height in a column; `Width="50%"` takes half of the parent.
 | `DatePicker` | a date with a calendar | `Label`, `Placeholder`, `Year`, `Month`, `Day` |
 | `RadioCards` | the chosen card's index | `Columns`, `<Choice>` children |
 | `Choice` | one card of a `RadioCards` | `Description`, `Icon`, `Badge` |
+| `Dropzone` | files dropped on it: `OnChanged` reports how many, `OnClicked` when the area is clicked | `Title`, `Description`, `Icon`, `Accept`, `Height`, `Compact` |
+| `SignaturePad` | the strokes drawn on it; `OnChanged` fires | `Height`, `Placeholder` |
+| `AvatarUpload` | a picture dropped on the avatar; `OnChanged` fires | `Size` |
 
 ### Display
 
@@ -415,7 +573,7 @@ it. `examples/hello_xml.c` is the smallest of the thirteen and the one to copy.
 ```
 
 The names are baked when the document is read, so `Name="row{i}"` gives
-`row0`, `row1`, `row2` 鈥?one element, one binding, one value each. `If` is
+`row0`, `row1`, `row2` —one element, one binding, one value each. `If` is
 computed every frame, so it follows the value.
 
 ## Following the file
@@ -495,8 +653,67 @@ place too, so a document can be a card, a toolbar or a single control.
   `cui_xml_free`; the `cui_ctx` must outlive it (a picture's texture is
   destroyed with the context).
 - The gallery pair covers the nine pages and the sidebar. What the gallery
-  opens over them — the two dialogs, the notification sheet, the command palette
-  and the toasts — is still drawn by `examples/gallery_ui.c` alone: the page
+  opens over them —the two dialogs, the notification sheet, the command palette
+  and the toasts —is still drawn by `examples/gallery_ui.c` alone: the page
   compares byte for byte, the modals have no document yet (`<Dialog>` can say
   the two dialogs; a sheet and the palette need a tag first, and the palette's
   commands are the app's data).
+
+## Moving a page of the gallery into the document
+
+All thirty pages are drawn by `examples/gallery.xml`, and
+`tests/xml_gallery_shots.c` compares every one of them, byte for byte, in both
+themes. The tags some pages need are not part of the library: a browser over the
+disk, a terminal, a generated data grid, a trace of four hundred spans and a
+painted picture are registered by the gallery host (`<PeopleGrid>`,
+`<FileBrowser>`, `<Shell>`, `<TraceView>`, `<ResultCard>` and others), because
+what they hold is data or a texture, not an attribute. A page moves over in five steps:
+
+1. Read the page in `examples/gallery_more.c` and list its components and where
+   their data comes from.
+2. Add the missing tags: a name in `src/cui_xml_internal.h`, a draw function and
+   a row in the attribute table in `src/cui_xml_widgets.c`.
+3. Write the page into `examples/gallery.xml` under `If="page == N"`. Data a
+   document cannot work out — a curve, a level each frame, a generated picture —
+   is computed in `examples/gallery_xml_ui.c` and handed over as a value
+   (`{traffic}`), or drawn by a tag the host registers when it needs a texture
+   (`<CanvasPicture>`, `<PriceChart>`, `<SceneViewer>`).
+4. Compare until it is identical, then in both themes, and add the page number
+   to `converted[]`:
+
+   ```sh
+   cmake --build build --parallel
+   ./build/tests/cui_xml_gallery_shots /tmp/shots 17 light
+   ./build/tests/cui_xml_gallery_shots /tmp/shots 17 dark
+   ```
+
+5. Run the whole suite and update this page's rows, `CHANGELOG.md` and the
+   coverage note at the top of `examples/gallery.xml`.
+
+What has bitten so far, all of it found by the byte comparison rather than by
+reading the code:
+
+- **A name is a key**: `cui_xml_bind_int(doc, "mode", &v)` makes every element
+  called `mode` read and write `v`, and a stateful element whose `Name` matches a
+  bound name takes the binding as its own value. Two elements that share a name
+  also share the state saved between frames. Give a control that keeps a value
+  its own name (`tool-mode` next to the theme's `mode`), or no name at all.
+
+- **Arrays handed to a component must live in frame memory**
+  (`cui__frame_alloc`): components keep the pointer in paint data and read it
+  after the call.
+- **`cui__xml_attr_list` keeps one list per element**, so two lists on one
+  element (a heatmap's row and column labels) need splitting by hand.
+- **Line breaks are normalized**, so a document written on Windows draws the
+  same text as the C example.
+- **Numbers cross as text**: `%.9g` round-trips a `float` exactly, `%.6f` does
+  not, and a last-bit difference shows up as a handful of pixels.
+- **Animated components are read from the frame or a shared clock**, never from
+  a `static` that carries over from the previous run; the C example is adjusted
+  the same way when it depends on one.
+- **A tag and an app's own tag share one namespace**: registering a name the
+  library already uses fails, so `examples/assistant.xml` calls its own message
+  tag `<Message>`.
+- **Elements with children take their title from `Text`**, not from the text
+  inside them.
+
