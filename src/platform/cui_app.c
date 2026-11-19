@@ -70,7 +70,11 @@ cui_app *cui_app_create(const cui_app_desc *desc) {
         free(app);
         return NULL;
     }
-    bool want_gl = d->renderer != CUI_RENDERER_SOFTWARE && !cui__env_is("CUI_RENDERER", "software");
+    bool want_software = d->renderer == CUI_RENDERER_SOFTWARE || cui__env_is("CUI_RENDERER", "software");
+    bool want_gl = !want_software && !cui__env_is("CUI_RENDERER", "vulkan");
+#ifdef CUI_WITH_VULKAN
+    bool want_vulkan = !want_software && d->renderer == CUI_RENDERER_AUTO && !cui__env_is("CUI_RENDERER", "opengl");
+#endif
     if (want_gl && cui__plat_gl_create(app, !d->no_vsync)) {
         app->gl = cui_gl_create(cui__plat_gl_proc);
         /* OpenGL drawn on the CPU (a virtual machine, a remote session) costs several times
@@ -83,11 +87,22 @@ cui_app *cui_app_create(const cui_app_desc *desc) {
             cui__plat_gl_release(app);
         }
     }
+#ifdef CUI_WITH_VULKAN
+    else if (want_vulkan) {
+        app->vulkan = cui_vulkan_create(app);
+    }
+#endif
+
     if (app->gl) {
         cui_renderer_iface iface = cui_gl_iface(app->gl);
         cui_set_renderer(app->ui, &iface);
+#ifdef CUI_WITH_VULKAN
+    } else if (app->vulkan) {
+        cui_renderer_iface iface = cui_vulkan_iface(app->vulkan);
+        cui_set_renderer(app->ui, &iface);
+#endif
     } else {
-        if (d->renderer == CUI_RENDERER_OPENGL) fprintf(stderr, "cui: OpenGL unavailable, using the software renderer\n");
+        if (d->renderer == CUI_RENDERER_OPENGL) fprintf(stderr, "cui: OpenGL/Vulkan unavailable, using the software renderer\n");
         cui__app_make_software(app);
     }
     cui_platform_iface pi;
@@ -115,8 +130,12 @@ void cui_app_destroy(cui_app *app) {
     if (!app) return;
     if (cui__current_app == app) cui__current_app = NULL;
     if (app->in_frame) { cui_end_frame(app->ui); app->in_frame = false; }
-    /* release textures while the GL context still exists */
+    /* release textures while the renderer still exists */
     cui_set_renderer(app->ui, NULL);
+#ifdef CUI_WITH_VULKAN
+    cui_vulkan_destroy(app->vulkan);
+    app->vulkan = NULL;
+#endif
     if (app->gl) cui_gl_destroy(app->gl);
     app->gl = NULL;
     /* close the window before the UI context goes away: the OS may still
@@ -189,6 +208,15 @@ void cui__app_render(cui_app *app) {
     if (app->gl) {
         cui_gl_render(app->gl, dd, true);
         cui__plat_gl_swap(app);
+#ifdef CUI_WITH_VULKAN
+    } else if (app->vulkan) {
+        int result = cui_vulkan_render(app->vulkan, dd);
+        if (result <= 0) {
+            app->presented_once = false;
+            if (result < 0) app->running = false;
+            return;
+        }
+#endif
     } else {
         if (w != app->sw_w || h != app->sw_h) {
             free(app->sw_pixels);
@@ -318,6 +346,10 @@ bool cui_app_screenshot(cui_app *app, void *rgba, int width, int height) {
         /* re-render without swapping so the back buffer holds the frame */
         cui_gl_render(app->gl, dd, true);
         cui_gl_read_pixels(app->gl, w, h, rgba);
+#ifdef CUI_WITH_VULKAN
+    } else if (app->vulkan) {
+        return cui_vulkan_readback(app->vulkan, dd, rgba, width);
+#endif
     } else {
         cui_sw_render(app->sw, dd, rgba, w, h, width * 4, CUI_SW_RGBA);
     }

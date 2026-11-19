@@ -71,6 +71,18 @@ CUI_API void cui_gl_read_pixels(cui_gl_renderer *r, int width, int height, void 
  * which redraws only what changed, is then much cheaper. */
 CUI_API bool cui_gl_is_software(const cui_gl_renderer *r);
 
+/* ---- Vulkan renderer ---- */
+typedef struct cui_vk_renderer cui_vk_renderer;
+#ifdef CUI_WITH_VULKAN
+struct cui_app;
+cui_vk_renderer *cui_vulkan_create(struct cui_app *app);
+cui_renderer_iface cui_vulkan_iface(cui_vk_renderer *r);
+/* 1 = frame handled, 0 = retry, -1 = fatal error. */
+int cui_vulkan_render(cui_vk_renderer *r, const cui_draw_data *dd);
+bool cui_vulkan_readback(cui_vk_renderer *r, const cui_draw_data *dd, void *rgba, int width);
+void cui_vulkan_destroy(cui_vk_renderer *r);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

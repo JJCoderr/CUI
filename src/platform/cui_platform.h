@@ -11,6 +11,7 @@ struct cui_app {
     cui_app_desc desc;
     char title[256];
     cui_gl_renderer *gl;
+    cui_vk_renderer *vulkan;
     cui_sw_renderer *sw;
     uint8_t *sw_pixels;
     int sw_w, sw_h;

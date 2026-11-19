@@ -2,6 +2,63 @@
 
 CUI turns every shape into vertices of a single format and a few draw commands. A renderer only needs one shader.
 
+## Vulkan on Win32
+
+Native Win32 CMake builds include Vulkan by default. Build and run Gallery:
+
+```powershell
+cmake -S . -B build
+cmake --build build --config Release
+.\build\examples\Release\gallery.exe
+```
+
+The build uses the Vulkan SDK headers, a Vulkan-Headers include directory set
+with `-DCUI_VULKAN_INCLUDE_DIR=<path>`, or a pinned copy downloaded by CMake.
+`-DCUI_WITH_VULKAN=OFF` disables the backend and skips the download.
+At runtime Vulkan needs the system loader and a Vulkan 1.1 device with Win32
+presentation support. The regular app API selects the renderer internally.
+In automatic mode, native Win32 tries Vulkan, OpenGL and software in that
+order. The existing OpenGL and software overrides still apply.
+
+The Vulkan implementation, including its GLSL sources and their embedded
+SPIR-V, lives in `src/render/cui_render_vulkan.c`. To update a shader, copy
+its GLSL block to a temporary `cui.vert` or `cui.frag` file and use
+`glslangValidator -V --vn cui_vk_vert -o cui_vert.h cui.vert` for the
+indexed vertex shader. For the instanced vertex shader use
+`cui_vk_quad_vert` with `cui_quad.vert`. For the fragment shader use
+`cui_vk_frag` with `cui.frag`. Replace the matching array initializer
+with the generated one. Normal builds use the embedded SPIR-V.
+
+Vulkan uses compact quad instances when the frame contains at least 1,024
+quads in batches made entirely of quads. The vertex shader expands each
+instance to a triangle strip. Small frames and mixed batches use indexed
+geometry. Both paths retain batch order and the same hardware scissor.
+
+### Compare screenshots and rendering rates
+
+On an interactive Windows desktop, build the static library with
+`CUI_BUILD_TESTS=ON` and run the comparison program:
+
+```powershell
+cmake --build build --config Release --target cui_renderer_compare
+Remove-Item Env:CUI_RENDERER -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force build/shots
+.\build\tests\Release\cui_renderer_compare.exe build/shots 1500
+```
+
+The program saves three Gallery scenes per renderer, compares their RGBA
+channels against OpenGL and exercises Vulkan swapchain resize. Its throughput
+test moves a small image on the Selection page, requests unsynchronized
+presentation and bypasses the app loop's refresh-rate cap. It reports three
+trials per renderer and repeats software with incremental rendering disabled.
+Times include UI construction, rendering and submission, plus a GPU queue
+drain at the end of each trial. FPS measures application throughput.
+Pass `uploads` after the frame count to also update one pixel of the image
+each frame and measure the texture upload path.
+Pass `instances` after the frame count to compare indexed and adaptive
+Vulkan rendering. This mode compares the same draw data for all Gallery
+pages and alternates the two paths for each throughput workload.
+
 ## Draw data
 
 ```c

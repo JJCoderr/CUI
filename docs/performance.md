@@ -63,7 +63,7 @@ The same person driving a real X11 window through XTest for 5 minutes at 1280×8
 
 Mixer and Pulse animate all the time, so leaving them alone does not make them cheaper; they run at a steady 60 frames a second (99th percentile frame interval 17.0 ms). Pulse redraws over 40% of its window every frame. Left alone, the other apps draw only when the caret blinks or a timer is due.
 
-The machine has no GPU. Through OpenGL on Mesa's llvmpipe, which draws on the CPU, the same Notes, Mail and Studio runs took 27 to 35% of a core and about 105 MB (most of it the driver), ten times the software renderer. The default renderer therefore picks software when the OpenGL driver reports a software rasterizer (llvmpipe, softpipe, SwiftShader, Microsoft Basic Render and others); `CUI_RENDERER=opengl` overrides it. With a real GPU OpenGL is the better choice and stays the default.
+The machine has no GPU. Through OpenGL on Mesa's llvmpipe, which draws on the CPU, the same Notes, Mail and Studio runs took 27 to 35% of a core and about 105 MB (most of it the driver), ten times the software renderer. When automatic selection reaches OpenGL on X11 or Win32, it switches to software if the driver reports a CPU-based renderer. `CUI_RENDERER=opengl` selects OpenGL explicitly. Native Win32 builds try Vulkan first.
 
 ### Speed
 
