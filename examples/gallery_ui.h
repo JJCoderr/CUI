@@ -50,6 +50,9 @@ typedef struct gallery {
 
 void gallery_init(gallery *g);
 void gallery_frame(cui_ctx *ui, gallery *g);
+void gallery_shortcuts(cui_ctx *ui, gallery *g);
+void gallery_drawer(cui_ctx *ui, gallery *g);
+void gallery_dialogs(cui_ctx *ui, gallery *g);
 const char *gallery_page_name(int page);
 int gallery_page_total(void);   /* PAGE_COUNT plus the extended pages */
 

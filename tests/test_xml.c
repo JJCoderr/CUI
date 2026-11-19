@@ -598,41 +598,121 @@ static void test_nav_highlight(cui_ctx *ui) {
     cui_set_reduced_motion(ui, true);
 }
 
-/* The social pieces a document can say: a divider, a typing line, a rolling
- * counter, comments with their hearts, presence avatars and a ticker. */
-/* A checklist marks the step that was clicked, as the C examples do: the tag
- * owns the boxes, the component only reports what was clicked. */
-static bool done_step_one(void) { return cui_xml_get_bool(g_doc, "s1"); }
-static bool done_step_two(void) { return cui_xml_get_bool(g_doc, "s2"); }
-
-/* A checklist marks the step that was clicked, as the C examples do: the tag owns
- * the boxes, the component only reports what was clicked. */
 static void test_checklist_click(cui_ctx *ui) {
-    static const char *text =
-        "<Window Width=\"420\" Height=\"300\"><Column Pad=\"10\" Gap=\"10\">"
-        "  <Checklist Name=\"list\" Title=\"Set up\">"
-        "    <Step Name=\"s1\" Description=\"Pick a name and invite your team.\" Action=\"Create\">Create your workspace</Step>"
-        "    <Step Name=\"s2\" Description=\"Link GitHub or GitLab.\" Action=\"Connect\">Connect a repository</Step>"
+    static const char text[] =
+        "<Window><Column Pad=\"10\">"
+        "  <Checklist Name=\"list\" Title=\"Set up\" OnClicked=\"step.action\">"
+        "    <Step Name=\"s1\" Done=\"true\">Create your workspace</Step>"
+        "    <Step Name=\"s2\" Description=\"Link a repository.\" Action=\"Connect\">Connect a repository</Step>"
         "  </Checklist>"
         "</Column></Window>";
     cui_xml *doc = cui_xml_parse(text, strlen(text), NULL);
+    cui_rect r;
     CHECK(doc != NULL);
     if (!doc) return;
-    g_doc = doc;
+    cui_xml_on_any(doc, on_action, NULL);
     run(ui, doc, 2);
-    CHECK(!done_step_one());
-    CHECK(!done_step_two());
-    /* the box is a small circle in the row: sweep the card, not its middle line */
-    {
-        cui_rect r = cui_xml_node_rect(cui_xml_find(doc, "list"));
-        float y, x;
-        for (y = r.y + r.h * 0.55f; y < r.y + r.h - 4 && !done_step_two(); y += 6)
-            for (x = r.x + 6; x < r.x + r.w - 4 && !done_step_two(); x += 8) click_at(ui, doc, x, y);
-    }
-    /* the component reports the step it acted on (the open one); whichever it is,
-     * the box has to end up ticked, which is what the C examples do */
-    CHECK(done_step_one() || done_step_two());
-    g_doc = NULL;
+    CHECK(cui_xml_get_bool(doc, "s1"));
+    CHECK(!cui_xml_get_bool(doc, "s2"));
+    r = cui_xml_node_rect(cui_xml_find(doc, "list"));
+    /* Click the first step's completion circle, then toggle it back by keyboard. */
+    click_at(ui, doc, r.x + 31, r.y + 97);
+    CHECK(!cui_xml_get_bool(doc, "s1"));
+    CHECK(!cui_xml_get_bool(doc, "s2"));
+    press(ui, doc, CUI_KEY_SPACE);
+    CHECK(cui_xml_get_bool(doc, "s1"));
+    CHECK(!cui_xml_get_bool(doc, "s2"));
+    /* Focus the next circle and then its action button. */
+    int actions = g_actions;
+    press(ui, doc, CUI_KEY_TAB);
+    press(ui, doc, CUI_KEY_TAB);
+    press(ui, doc, CUI_KEY_ENTER);
+    CHECK(cui_xml_get_bool(doc, "s1"));
+    CHECK(cui_xml_get_bool(doc, "s2"));
+    CHECK(g_actions == actions + 1);
+    CHECK(!strcmp(g_state.last_action, "step.action"));
+    cui_xml_free(doc);
+}
+
+static void test_scoped_popover(cui_ctx *ui) {
+    static const char text[] =
+        "<Window><Column Pad=\"10\"><Row Gap=\"8\">"
+        "  <Button Name=\"trigger\" OnClicked=\"popover:filters\">Filters</Button>"
+        "  <Popover Name=\"filters\">"
+        "    <Button Name=\"apply\" OnClicked=\"popover:filters\">Apply</Button>"
+        "  </Popover>"
+        "</Row></Column></Window>";
+    cui_xml *doc = cui_xml_parse(text, strlen(text), NULL);
+    const cui_xml_node *apply;
+    cui_rect r;
+    CHECK(doc != NULL);
+    if (!doc) return;
+    run(ui, doc, 2);
+    apply = cui_xml_find(doc, "apply");
+    CHECK(cui_xml_node_id(apply) == 0);
+    r = cui_xml_node_rect(cui_xml_find(doc, "trigger"));
+    click_at(ui, doc, r.x + r.w / 2, r.y + r.h / 2);
+    run(ui, doc, 2);
+    CHECK(cui_xml_node_id(apply) != 0);
+    r = cui_xml_node_rect(apply);
+    CHECK(r.w > 0 && r.h > 0);
+    click_at(ui, doc, r.x + r.w / 2, r.y + r.h / 2);
+    run(ui, doc, 30);
+    CHECK(cui_xml_node_id(cui_xml_find(doc, "filters")) == 0);
+    cui_xml_free(doc);
+}
+
+static void test_table_sort(cui_ctx *ui) {
+    static const char text[] =
+        "<Window><Table Name=\"sort\" SortColumn=\"0\" AutoSort=\"true\">"
+        "  <TableColumn Text=\"Name\" Sortable=\"true\"/>"
+        "  <TableRow><Cell SortValue=\"B\"><Button Name=\"b\">B</Button></Cell></TableRow>"
+        "  <TableRow><Cell SortValue=\"A\"><Button Name=\"a\">A</Button></Cell></TableRow>"
+        "</Table></Window>";
+    cui_xml *doc = cui_xml_parse(text, strlen(text), NULL);
+    cui_rect r;
+    CHECK(doc != NULL);
+    if (!doc) return;
+    run(ui, doc, 3);
+    CHECK(cui_xml_node_rect(cui_xml_find(doc, "a")).y < cui_xml_node_rect(cui_xml_find(doc, "b")).y);
+    r = cui_xml_node_rect(cui_xml_find(doc, "sort"));
+    click_at(ui, doc, r.x + 30, r.y + 14);
+    CHECK(cui_xml_node_rect(cui_xml_find(doc, "b")).y < cui_xml_node_rect(cui_xml_find(doc, "a")).y);
+    cui_xml_free(doc);
+}
+
+static void test_kanban_move(cui_ctx *ui) {
+    static const char text[] =
+        "<Window><Kanban Name=\"board\" AutoMove=\"true\">"
+        "  <KanbanColumn Text=\"Backlog\" Width=\"200\">"
+        "    <KanbanCard Name=\"first\" Card=\"1\"><Text>First card</Text></KanbanCard>"
+        "  </KanbanColumn>"
+        "  <KanbanColumn Text=\"Done\" Width=\"200\">"
+        "    <KanbanCard Name=\"second\" Card=\"2\"><Text>Second card</Text></KanbanCard>"
+        "  </KanbanColumn>"
+        "</Kanban></Window>";
+    cui_xml *doc = cui_xml_parse(text, strlen(text), NULL);
+    const cui_xml_node *first, *second;
+    cui_rect from, to;
+    CHECK(doc != NULL);
+    if (!doc) return;
+    run(ui, doc, 3);
+    first = cui_xml_find(doc, "first");
+    second = cui_xml_find(doc, "second");
+    from = cui_xml_node_rect(first);
+    to = cui_xml_node_rect(second);
+    CHECK(from.w > 0 && to.w > 0 && from.x < to.x);
+    cui_input_mouse_move(ui, from.x + 25, from.y + 15);
+    run(ui, doc, 1);
+    cui_input_mouse_button(ui, CUI_MOUSE_LEFT, true);
+    run(ui, doc, 1);
+    cui_input_mouse_move(ui, to.x + 25, to.y + to.h + 10);
+    run(ui, doc, 3);
+    cui_input_mouse_button(ui, CUI_MOUSE_LEFT, false);
+    run(ui, doc, 30);
+    from = cui_xml_node_rect(first);
+    to = cui_xml_node_rect(second);
+    CHECK(from.w > 0 && from.x == to.x && from.y > to.y);
     cui_xml_free(doc);
 }
 
@@ -715,6 +795,9 @@ int main(int argc, char **argv) {
     test_colors_and_tags(ui);
     test_social_tags(ui);
     test_checklist_click(ui);
+    test_scoped_popover(ui);
+    test_table_sort(ui);
+    test_kanban_move(ui);
     test_example_document(ui);
     test_nav_highlight(ui);
 

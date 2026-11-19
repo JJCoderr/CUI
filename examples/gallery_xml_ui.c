@@ -24,10 +24,18 @@
 
 /* ---- what the document writes and reads --------------------------------- */
 
-static gallery *g_app;
+static cui_ctx *g_ui;          /* available to actions during gallery_xml_render */
 static int g_mode;   /* the theme segmented holds an index, the gallery a bool */
-static int g_theme_set = -1;   /* the theme the context already has */
-static int g_upload;           /* the job of the feedback page: idle, busy, done, failed */
+static double g_upload_started, g_save_started;
+static int g_upload_runs, g_tour, g_replay, g_revenue;
+static int g_bar_values[6];
+static bool g_branch_deleted, g_project_deleted, g_release, g_key_revealed;
+static double g_ai_started;
+static unsigned g_attachments;
+static int g_deck;
+static const char *const tag_names[] = {
+    "tag-pending", "tag-inprogress", "tag-submitted", "tag-inreview", "tag-success", "tag-failed", "tag-expired"
+};
 static bool g_grayscale;       /* the pattern meter draws its parts by density */
 static void gallery_xml_voice_reset(void);
 static int g_audio_frame;      /* the frame the audio meters are drawn in */
@@ -50,6 +58,7 @@ static void paint_swatch(cui_ctx *ui, cui_rect r, void *user) {
 /* <Swatch Index="3" Selected="{accent == 3}"/>: 22 points square, a tooltip
  * with the accent's name, a click sets it. */
 static bool tag_swatch(cui_xml *doc, cui_xml_node *node, cui_ctx *ui, void *user) {
+    gallery *g = user;
     static const unsigned hex[CUI_ACCENT_COUNT] = { 0x555555, 0x7747ff, 0x0562ef, 0x00864b,
                                                     0xf3ad20, 0xc25300, 0xd1403a, 0xd23286 };
     const char *index_text = cui_xml_node_attr_value(doc, node, "index");
@@ -57,7 +66,6 @@ static bool tag_swatch(cui_xml *doc, cui_xml_node *node, cui_ctx *ui, void *user
     const char *selected_text = cui_xml_node_attr_value(doc, node, "selected");
     swatch_paint d;
     cui_canvas_result r;
-    (void)user;
     if (index < 0 || index >= CUI_ACCENT_COUNT) return false;
     d.color = CUI_RGB(hex[index]);
     d.selected = selected_text && (!strcmp(selected_text, "1") || !strcmp(selected_text, "true") ||
@@ -65,7 +73,7 @@ static bool tag_swatch(cui_xml *doc, cui_xml_node *node, cui_ctx *ui, void *user
     r = cui_canvas(ui, cui_xml_node_name(node), CUI_PX(22), CUI_PX(22), paint_swatch, &d, sizeof d);
     cui_tooltip(ui, cui_accent_name((cui_accent)index));
     if (r.clicked) {
-        if (g_app) g_app->accent = index;
+        g->accent = index;
         cui_set_accent(ui, (cui_accent)index);
     }
     return true;
@@ -327,10 +335,26 @@ static bool tag_canvas_files(cui_xml *doc, cui_xml_node *node, cui_ctx *ui, void
 /* ---- actions ------------------------------------------------------------ */
 
 static void on_action(cui_xml *doc, cui_xml_node *node, const char *action, void *user) {
-    gallery *g = user ? user : g_app;
-    (void)doc;
-    (void)node;
-    if (!g) return;
+    static const char *const crumbs[] = { "Home", "Projects", "CUI", "Settings" };
+    static const char *const steps[] = { "Create your workspace", "Connect a repository",
+                                         "Import your data", "Turn on notifications" };
+    static const struct { const char *name, *title; cui_toast_opts options; } toasts[] = {
+        { "toast:workspace", "Workspace created", { .description = "It is empty for now. Start with a project.", .tone = CUI_TONE_SUCCESS } },
+        { "toast:deleted", "Deleted", { .tone = CUI_TONE_DANGER } },
+        { "toast:saved", "Changes saved", { .description = "Your profile is up to date.", .tone = CUI_TONE_SUCCESS } },
+        { "toast:failed", "Upload failed", { .description = "The file is larger than 25 MB.", .tone = CUI_TONE_DANGER } },
+        { "toast:archived", "Message archived", { .action = "Undo" } },
+        { "toast:update", "Update available", { .description = "Version 1.1 is ready to install.", .tone = CUI_TONE_INFO } },
+        { "toast:order", "Order saved" },
+        { "toast:code", "Code entered", { .tone = CUI_TONE_SUCCESS } },
+        { "toast:project", "Project created", { .tone = CUI_TONE_SUCCESS } },
+        { "toast:release", "Opening release notes" },
+        { "toast:archive-conversations", "3 conversations archived", { .action = "Undo", .show_timer = true } },
+    };
+    gallery *g = user;
+    cui_ctx *ui = g_ui;
+    int index = cui_xml_node_index(node);
+    if (!ui) return;
     if (!strcmp(action, "open-file")) {
         g_open_dlg = true;
         return;
@@ -342,27 +366,115 @@ static void on_action(cui_xml *doc, cui_xml_node *node, const char *action, void
     if (!strncmp(action, "page:", 5)) {
         int page = atoi(action + 5);
         int total = gallery_page_total();
-        if (page >= 0 && page < total) g->page = page;
+        if (page >= 0 && page < total) {
+            g->page = page;
+        }
     } else if (!strcmp(action, "theme.sync")) {
         g->dark = g_mode == 1;
+    } else if (!strcmp(action, "theme.control")) {
+        g->dark = cui_get_theme_mode(ui) == CUI_THEME_DARK;
     } else if (!strcmp(action, "loading:on")) {
         g->loading = true;
     } else if (!strcmp(action, "loading:off")) {
         g->loading = false;
-    } else if (!strncmp(action, "tab:", 4)) {
-        int tab = atoi(action + 4);
-        if (tab >= 0 && tab < 4) g->tab = tab;
+    } else if (!strcmp(action, "step:back")) {
+        if (g->step > 0) g->step--;
+    } else if (!strcmp(action, "step:next")) {
+        if (g->step < 3) g->step++;
+        else cui_toast(ui, "All set", .tone = CUI_TONE_SUCCESS);
+    } else if (!strcmp(action, "dialog:profile")) {
+        g->dialog_open = true;
+    } else if (!strcmp(action, "sheet:notifications")) {
+        g->sheet_open = true;
+    } else if (!strcmp(action, "dialog:delete")) {
+        g->confirm_open = true;
+    } else if (!strcmp(action, "palette:open")) {
+        g->palette_open = true;
+    } else if (!strcmp(action, "drawer:open")) {
+        g->drawer = true;
+    } else if (!strncmp(action, "row:", 4)) {
+        g->selected_row = atoi(action + 4);
+    } else if (!strncmp(action, "file:", 5)) {
+        g->selected_file = atoi(action + 5);
+    } else if (!strcmp(action, "upload:start")) {
+        g_upload_started = cui_time(ui);
+        g_upload_runs++;
+    } else if (!strcmp(action, "save:start")) {
+        g_save_started = cui_time(ui);
+    } else if (!strcmp(action, "branch:delete")) {
+        g_branch_deleted = true;
+    } else if (!strcmp(action, "veil:key")) {
+        g_key_revealed = !g_key_revealed;
+    } else if (!strcmp(action, "project:delete")) {
+        g_project_deleted = true;
+    } else if (!strcmp(action, "tour:start")) {
+        g_tour = 0;
+    } else if (!strcmp(action, "motion:replay")) {
+        g_replay++;
+    } else if (!strcmp(action, "sale:add")) {
+        g_revenue += 1287;
+    } else if (!strcmp(action, "bars:shuffle")) {
+        for (int i = 0; i < 6; i++) g_bar_values[i] = 500 + rand() % 5000;
+    } else if (!strcmp(action, "deck:swipe")) {
+        g_deck = (g_deck + 1) % 5;
+        cui_toast(ui, index > 0 ? "Saved" : "Skipped");
+    } else if (!strcmp(action, "tags:restore")) {
+        for (size_t i = 0; i < sizeof tag_names / sizeof tag_names[0]; i++)
+            cui_xml_node_show(cui_xml_find(doc, tag_names[i]), true);
+    } else if (!strcmp(action, "ai:response")) {
+        if ((index & CUI_RESPONSE_REGENERATE) && g_ai_started < 0) g_ai_started = cui_time(ui);
+    } else if (!strcmp(action, "ai:compose")) {
+        if (index & CUI_COMPOSER_SEND) {
+            cui_xml_set_text(doc, "ai-composer", "");
+            g_ai_started = cui_time(ui);
+        }
+        if (index & CUI_COMPOSER_STOP) g_ai_started = -1;
+        if (index & CUI_COMPOSER_ATTACH)
+            cui_toast(ui, "Attach files", .description = "Drop files on the window, too.");
+    } else if (!strcmp(action, "ai:remove")) {
+        g_attachments &= ~(index == 1 || g_attachments == 2 ? 2u : 1u);
+    } else if (!strcmp(action, "voice:session")) {
+        if (index & CUI_VOICE_SESSION_END) {
+            gallery_xml_voice_reset();
+            cui_toast(ui, "Call ended", .description = "A new one starts from the top.");
+        }
+    } else if (!strcmp(action, "toast:breadcrumb") && index >= 0 && index < 4) {
+        cui_toast(ui, crumbs[index]);
+    } else if (!strcmp(action, "toast:onboarding") && index >= 0 && index < 4) {
+        cui_toast(ui, steps[index], .tone = CUI_TONE_SUCCESS);
+    } else if (!strcmp(action, "toast:swipe")) {
+        cui_toast(ui, index == 0 ? "Marked as done" : index == 100 ? "Archived" : "Deleted",
+                  .tone = index == 101 ? CUI_TONE_DANGER : CUI_TONE_SUCCESS);
+    } else {
+        for (size_t i = 0; i < sizeof toasts / sizeof toasts[0]; i++) {
+            if (!strcmp(action, toasts[i].name)) {
+                cui_toast_ex(ui, toasts[i].title, &toasts[i].options);
+                break;
+            }
+        }
     }
 }
 
 /* ---- wiring ------------------------------------------------------------- */
 
 cui_xml *gallery_xml_open(const char *path, gallery *g) {
+    static const int initial_bars[] = { 4820, 3920, 2410, 1830, 1210, 640 };
     cui_xml *doc = cui_xml_load(path);
     if (!doc) return NULL;
-    g_app = g;
     g_mode = g->dark ? 1 : 0;
     g_audio_frame = 0;
+    g_upload_started = g_save_started = -1;
+    g_upload_runs = g_replay = g_deck = 0;
+    g_tour = -1;
+    g_revenue = 48210;
+    memcpy(g_bar_values, initial_bars, sizeof g_bar_values);
+    g_branch_deleted = g_project_deleted = false;
+    g_release = true;
+    g_key_revealed = false;
+    g_open_dlg = g_save_dlg = false;
+    g_ai_started = -1;
+    g_attachments = 3;
+    g_grayscale = false;
     gallery_xml_voice_reset();
 
     /* what the document writes: the gallery's own state */
@@ -389,7 +501,18 @@ cui_xml *gallery_xml_open(const char *path, gallery *g) {
     cui_xml_bind_bool(doc, "bluetooth", &g->bluetooth);
     cui_xml_bind_bool(doc, "airplane", &g->airplane);
     cui_xml_bind_bool(doc, "loading", &g->loading);
-    cui_xml_bind_int(doc, "upload", &g_upload);
+    cui_xml_bind_int(doc, "audioTourStep", &g_tour);
+    cui_xml_bind_int(doc, "replay", &g_replay);
+    cui_xml_bind_int(doc, "revenue", &g_revenue);
+    cui_xml_bind_bool(doc, "branchDeleted", &g_branch_deleted);
+    cui_xml_bind_bool(doc, "projectDeleted", &g_project_deleted);
+    cui_xml_bind_bool(doc, "releaseOpen", &g_release);
+    cui_xml_bind_bool(doc, "keyRevealed", &g_key_revealed);
+    for (int i = 0; i < 6; i++) {
+        char name[16];
+        snprintf(name, sizeof name, "barValue%d", i);
+        cui_xml_bind_int(doc, name, &g_bar_values[i]);
+    }
     cui_xml_bind_bool(doc, "grayscale", &g_grayscale);
     cui_xml_bind_bool(doc, "tree_src", &g->tree_src);
     cui_xml_bind_bool(doc, "tree_ui", &g->tree_ui);
@@ -742,9 +865,40 @@ static void gallery_xml_voice(cui_xml *doc) {
     (void)k;
 }
 
-void gallery_xml_values(cui_xml *doc, gallery *g) {
+void gallery_xml_render(cui_xml *doc, cui_ctx *ui, gallery *g) {
+    static const char *const cities[] = { "Kyoto", "Lisbon", "Reykjavik", "Oaxaca", "Hanoi" };
+    static const char *const city_colors[] = { "#c8553d", "#2d3047", "#5b8e7d", "#b7791f", "#1f3a5f" };
     char text[24];
-    int page = g->page;
+    bool narrow = cui_viewport_size(ui).x < 760, any_tag = false;
+    double now = cui_time(ui);
+    double save_age = now - g_save_started;
+    int page;
+    if (g_ai_started >= 0 && now - g_ai_started > 9) g_ai_started = -1;
+    if (cui_get_theme_mode(ui) != (g->dark ? CUI_THEME_DARK : CUI_THEME_LIGHT))
+        cui_set_theme(ui, g->dark ? CUI_THEME_DARK : CUI_THEME_LIGHT);
+    gallery_shortcuts(ui, g);
+    page = g->page;
+    if (!narrow) g->drawer = false;
+    cui_xml_set_var(doc, "narrow", narrow ? "1" : "0");
+    cui_xml_set_var(doc, "upload", g_upload_started < 0 ? "0" : now - g_upload_started < 2 ? "1" :
+                                     g_upload_runs % 2 ? "2" : "3");
+    cui_xml_set_var(doc, "saveStatus", g_save_started < 0 || save_age >= 3 ? "idle" :
+                                          save_age < 1.4 ? "busy" : "success");
+    for (size_t i = 0; i < sizeof tag_names / sizeof tag_names[0]; i++)
+        any_tag |= cui_xml_node_visible(cui_xml_find(doc, tag_names[i]));
+    cui_xml_set_var(doc, "allTagsRemoved", any_tag ? "0" : "1");
+    cui_xml_set_var(doc, "aiBusy", g_ai_started >= 0 ? "1" : "0");
+    snprintf(text, sizeof text, "%.3f", g_ai_started >= 0 ? now - g_ai_started : 0.0);
+    cui_xml_set_var(doc, "aiSeconds", text);
+    cui_xml_set_var(doc, "aiAttachments", g_attachments == 3 ? "quarterly-report.pdf|metrics.csv" :
+                    g_attachments == 2 ? "metrics.csv" : g_attachments == 1 ? "quarterly-report.pdf" : "");
+    for (int i = 0; i < 3; i++) {
+        int city = (g_deck + i) % 5;
+        snprintf(text, sizeof text, "deckCity%d", i);
+        cui_xml_set_var(doc, text, cities[city]);
+        snprintf(text, sizeof text, "deckColor%d", i);
+        cui_xml_set_var(doc, text, city_colors[city]);
+    }
     snprintf(text, sizeof text, "v%d.%d", CUI_VERSION_MAJOR, CUI_VERSION_MINOR);
     cui_xml_set_var(doc, "version", text);
     cui_xml_set_var(doc, "pageTitle", page >= 0 && page < gallery_page_total() ? gallery_page_name(page) : "");
@@ -758,12 +912,13 @@ void gallery_xml_values(cui_xml *doc, gallery *g) {
     cui_xml_set_var(doc, "peopleNote", gallery_more_people_note());
     cui_xml_set_var(doc, "chosenPath", gallery_more_chosen_path());
     cui_xml_set_var(doc, "hasChosen", gallery_more_chosen_path()[0] ? "1" : "");
-}
-
-void gallery_xml_apply_theme(cui_ctx *ui, gallery *g) {
-    int want = (int)(g->dark ? CUI_THEME_DARK : CUI_THEME_LIGHT);
-    if (g_theme_set != want) {
-        cui_set_theme(ui, (cui_theme_mode)want);
-        g_theme_set = want;
-    }
+    g_ui = ui;
+    cui_xml_render(doc, ui);
+    g_ui = NULL;
+    gallery_drawer(ui, g);
+    gallery_dialogs(ui, g);
+    if (g->page != page) cui_scroll_to_at(ui, cui_xml_node_id(cui_xml_find(doc, "main")), 0);
+    if (now - g_upload_started < 2 && g_upload_started >= 0) cui_request_redraw(ui);
+    if (now - g_save_started < 3 && g_save_started >= 0) cui_request_redraw(ui);
+    if (g_ai_started >= 0 && g->page == 21) cui_request_redraw(ui);
 }

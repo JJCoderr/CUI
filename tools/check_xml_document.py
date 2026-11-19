@@ -35,6 +35,13 @@ BOOL_ATTRIBUTES = {
 }
 
 BOOLEAN_WORDS = {"true", "false", "1", "0", "yes", "no", "on", "off"}
+NON_BOOLEAN_ATTRIBUTES = {
+    "eventtrack": {"selected"},
+    "apiexplorer": {"selected"},
+    "pipeline": {"selected"},
+    "filterbar": {"selected"},
+    "kanbancolumn": {"dot"},
+}
 
 
 def read(path):
@@ -114,7 +121,8 @@ def main(argv):
                     float(value)
                 except ValueError:
                     problems.append((el, 'Fill="%s" is neither a number nor "fill"' % value))
-            if low in BOOL_ATTRIBUTES and value.lower() not in BOOLEAN_WORDS:
+            if (low in BOOL_ATTRIBUTES and low not in NON_BOOLEAN_ATTRIBUTES.get(tag, ())
+                    and value.lower() not in BOOLEAN_WORDS):
                 problems.append((el, '%s="%s" is not a boolean' % (name, value)))
         for kid in el:
             walk(kid)

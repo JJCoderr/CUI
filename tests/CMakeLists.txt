@@ -63,6 +63,7 @@ add_test(NAME xml_pair_todo COMMAND cui_xml_pair_shots $<TARGET_FILE:todo> $<TAR
 add_test(NAME xml_pair_caffeine COMMAND cui_xml_pair_shots $<TARGET_FILE:caffeine> $<TARGET_FILE:caffeinexml>)
 add_test(NAME xml_pair_notes COMMAND cui_xml_pair_shots $<TARGET_FILE:notes> $<TARGET_FILE:notesxml>)
 add_test(NAME xml_pair_settings COMMAND cui_xml_pair_shots $<TARGET_FILE:settings> $<TARGET_FILE:settingsxml>)
+add_test(NAME xml_pair_music COMMAND cui_xml_pair_shots $<TARGET_FILE:music> $<TARGET_FILE:musicxml>)
 add_test(NAME xml_pair_dashboard COMMAND cui_xml_pair_shots $<TARGET_FILE:dashboard> $<TARGET_FILE:dashboardxml>)
 add_test(NAME xml_pair_assistant COMMAND cui_xml_pair_shots $<TARGET_FILE:assistant> $<TARGET_FILE:assistantxml>)
 add_test(NAME xml_pair_mail COMMAND cui_xml_pair_shots $<TARGET_FILE:mail> $<TARGET_FILE:mailxml>)

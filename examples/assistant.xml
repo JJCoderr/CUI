@@ -69,7 +69,7 @@
         <MenuItem Text="Keyboard shortcuts" Icon="keyboard"/>
         <MenuSeparator/>
         <MenuItem Text="Log out" Icon="log-out"/>
-      </UserMenu>
+      </AccountMenu>
 
     </Column>
   </Widget>

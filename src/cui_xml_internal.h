@@ -477,7 +477,7 @@ struct cui_xml {
     bool builtins;
     bool quit;
     char *pending_copy;      /* "copy:TEXT", put on the clipboard at the next frame */
-    char *pending_popover;   /* "popover:NAME", toggled at the next frame */
+    char *pending_popover;   /* "popover:NAME", consumed in the target's ID scope */
 
     cui_xml_widget *widgets;
     int widget_count, widget_cap;

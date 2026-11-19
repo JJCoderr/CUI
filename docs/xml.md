@@ -133,7 +133,7 @@ Some names need no C at all. They apply when no function is bound to the name:
 | `show:NAME`, `hide:NAME`, `toggle:NAME` | whether an element is drawn (a `Dialog`, an `Alert`, any element) |
 | `enable:NAME`, `disable:NAME` | whether it takes input |
 | `page:NAME=2`, `page:NAME=+1`, `page:NAME=-1` | the index of a `Tabs`, `Segmented`, `Select`, `DocTabs` or `Carousel` |
-| `popover:NAME` | opens or closes the `<Popover Name="NAME">` |
+| `popover:NAME` | opens or closes a named `Popover` or `ConfirmPopover` |
 | `copy:TEXT` | the text to the clipboard |
 
 `cui_xml_set_builtins(doc, false)` turns them off (a preview shows an interface
@@ -235,7 +235,7 @@ height in a column; `Width="50%"` takes half of the parent.
 | `ExpandableText` | text clamped to a few lines, with Show more | `Lines`, `Size` |
 | `ExpandableCard` | a card whose header opens its children | `Open`, `Description`, `Icon`, `Badge`, `BadgeTone` |
 | `Countdown` | digits counting down | `Seconds`, `HideDays`, `Compact` |
-| `Checklist` | an onboarding card, with `<Step>` children | `Title`, `Description` |
+| `Checklist` | an onboarding card, with `<Step>` children | `Title`, `Description`, `OnChanged` for completion changes, `OnClicked` for step actions |
 | `Step` | one step of a `Checklist` | `Description`, `Action`, `Done` |
 | `Veil` | covers its children with dots until `Revealed` | `Revealed`, `Label`, `Hint`, `Toggle`, `Radius` |
 | `SplitButton` | reports the menu entry chosen | `Items`, `Icons`, `Variant`, `Icon` |
@@ -260,13 +260,13 @@ height in a column; `Width="50%"` takes half of the parent.
 | `Reasoning` | what the model thought, folded away | `Thinking`, `Seconds`, `Title`, children |
 | `ToolCall` | one tool call, with its input and output | `Status`, `Icon`, `Detail`, `Input`, `Output`, `Seconds` |
 | `AgentStatus` | what the agent is doing now | `Status`, `Seconds`, `Icon` |
-| `Typewriter` | text that types itself in | `Size`, `Speed`, `Delay` |
+| `Typewriter` | text that types itself in | `Size`, `Speed`, `Delay`, `Replay` (change the integer to restart) |
 | `Citation` | a number that shows one source on hover | `Number`, `From` (a SourceList's Name), `Index` |
 | `SourceList` | the documents an answer used | `<Source>` children |
 | `Source` | one document | `Title`, `URL`, `Snippet` |
 | `ResponseActions` | copy, regenerate, vote and share | `CopyText`, `NoRegenerate`, `NoShare` |
 | `ContextMeter` | how full the context is | `Used`, `Limit`, `Unit`, `<Part>` children |
-| `ChatComposer` | a growing field with attachments and models | `Placeholder`, `Busy`, `Attachments`, `Models`, `Model` |
+| `ChatComposer` | a growing field with attachments and models | `Placeholder`, `Busy`, `Attachments`, `Models`, `Model`, `OnRemoved` reports the attachment index |
 | `AgentPlan` | steps with their status | `Title`, `<PlanStep>` children |
 | `PlanStep` | one step | `Detail`, `Status` |
 | `PromptSuggestions` | cards to start a conversation with | `Columns`, `<Suggestion>` children |
@@ -296,7 +296,7 @@ height in a column; `Width="50%"` takes half of the parent.
 | `PresencePill` | who is here | `Users`, `Size`, `Visible` |
 | `Loader` | a looping wait | `Style` (`dots`/`bars`/`pulse`/`orbit`/`grid`), `Size` |
 | `ShimmerText` | text with a highlight sweeping across it | `Size`, `Speed` |
-| `TextReveal` | words that rise into place | `Size`, `Font`, `Delay` |
+| `TextReveal` | words that rise into place | `Size`, `Font`, `Delay`, `Replay` (change the integer to restart) |
 | `WordRotate` | one word at a time | `Words`, `Interval`, `Size`, `Font` |
 | `GradientText` | text painted with a gradient | `From`, `To`, `Animate`, `Size`, `Font` |
 | `Spotlight` | a card with a light that follows the pointer | `Fill`, `Beam`, `Pad`, `Color` |
@@ -320,7 +320,7 @@ height in a column; `Width="50%"` takes half of the parent.
 | `Radar` | series over shared axes | `Axes`, `Size`, `Max`, `<Series>` children |
 | `Scatter` | points per series | `Height`, `XLabel`, `YLabel`, `<Series Points="x,y;..." Sizes="...">` children |
 | `Sankey` | flows between named nodes | `Nodes`, `Links` (`from-to:value`), `Height` |
-| `Kanban` | a board; `OnChanged` when a card is dropped | `<KanbanColumn>` children |
+| `Kanban` | a board with `<KanbanColumn>` children | `AutoMove` stores drops in the document, `OnChanged` reports a drop |
 | `KanbanColumn` | one column | `Dot`, `Limit`, `Width`, `<KanbanCard>` children |
 | `KanbanCard` | one card | `Card` (its id), children are its content |
 | `WeekCalendar` | seven days of events | `StartHour`, `EndHour`, `Height`, `<Event>` children |
@@ -416,7 +416,7 @@ height in a column; `Width="50%"` takes half of the parent.
 | `Accordion` | a collapsible section | `Title`, `Open` |
 | `Tree` | a tree node with its children under it | `Text`, `Open`, `Icon`, `Leaf`, `Selected` |
 | `ListItem` | a selectable row | `Text`, `Subtitle`, `Trailing`, `Icon`, `Selected`, `Avatar` |
-| `Table` | columns and rows | `Striped`, `Compact`, `Selectable`, `Height`, `SortColumn`, `SortDescending` |
+| `Table` | columns and rows | `Striped`, `Compact`, `Selectable`, `Height`, `SortColumn`, `SortDescending`, `AutoSort` sorts by cell text or `Cell SortValue` |
 | `TableColumn` | one column | `Title`, `Width`, `Align`, `Sortable` |
 | `TableRow` | one row of `<Cell>` | `Selected`, `OnClicked` |
 | `Cell` | one cell: `Text`, or elements | |
@@ -450,7 +450,7 @@ height in a column; `Width="50%"` takes half of the parent.
 | `Dialog` | a modal dialog | `Title`, `Description`, `Width`, `Persistent`, `Open` |
 | `DialogFooter` | the row of buttons at the bottom of a dialog | `<Button>` children |
 | `Popover` | a panel anchored to the element before it | `Width`, `Placement`, `Gap`; `popover:NAME` opens it |
-| `ContextMenu` | a menu on right click over the element before it | `<MenuItem>` children |
+| `ContextMenu` | a menu on right click over the preceding element or the named `Target` | `<MenuItem>` children |
 | `StatusTag` | a colored state tag | `Text`, `Status`, `Tone`, `Icon`, `Removable` |
 | `ColorPicker` | a color | `Value` |
 | `Reorder` | children the user drags into another order | `<ReorderItem>` children; `OnChanged` fires |

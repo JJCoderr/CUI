@@ -22,7 +22,7 @@
   <Row Width="fill" FillV="1" Align="stretch" Background="background">
 
     <!-- ============================= sidebar ============================= -->
-    <Column Width="240" FillV="1" Pad="12" Gap="2" Background="surfaceMuted">
+    <Column If="!narrow" Width="240" FillV="1" Pad="12" Gap="2" Background="surfaceMuted">
       <Row Gap="10" PadX="8" PadTop="6" PadBottom="18">
         <Box Width="28" Height="28" Radius="9" Background="foreground" Direction="stack"
              Align="center" Justify="center">
@@ -85,12 +85,16 @@
       </Column>
     </Column>
 
-    <Separator/>
+    <Separator If="!narrow"/>
 
     <!-- ============================== pages ============================== -->
     <Scroll Name="main" Width="fill" Fade="true">
       <Row Justify="center" Align="start">
-        <Column Width="fill" MaxWidth="920" PadX="40" PadTop="36" PadBottom="64" Gap="20">
+        <Column Width="fill" MaxWidth="920" PadX="{narrow ? 16 : 40}" PadTop="{narrow ? 12 : 36}" PadBottom="64" Gap="20">
+          <Row If="narrow" Gap="8" Width="fill">
+            <IconButton Name="components-menu" Icon="menu" Tooltip="Components" OnClicked="drawer:open"/>
+            <Text Font="medium" Size="15">CUI</Text>
+          </Row>
 
           <Column Gap="6" PadBottom="8" If="page != 0">
             <Heading Level="2">{pageTitle}</Heading>
@@ -102,7 +106,7 @@
             <Text Color="textSecondary" Size="15">Forms, tables, charts, planning boards and chat pieces that draw themselves the same way on Windows, macOS and Linux. Every one works from the keyboard.</Text>
             <Row Gap="8" PadTop="6" Wrap="true">
               <Button Text="Browse components" Variant="primary" IconRight="arrow-right" OnClicked="page:1"/>
-              <Button Text="Open command palette" Variant="outline" Icon="command"/>
+              <Button Text="Open command palette" Variant="outline" Icon="command" OnClicked="palette:open"/>
             </Row>
           </Column>
           <Box Direction="grid" Columns="3" MinColumnWidth="200" Gap="16" If="page == 0">
@@ -249,7 +253,7 @@
                 <MenuItem Text="Duplicate" Icon="copy" Shortcut="Ctrl D"/>
                 <MenuItem Text="Share" Icon="share-2"/>
                 <MenuSeparator/>
-                <MenuItem Text="Delete" Icon="trash-2" Danger="true" OnClicked="confirm:open"/>
+                <MenuItem Text="Delete" Icon="trash-2" Danger="true" OnClicked="dialog:delete"/>
               </Menu>
               <Menu Text="More actions" IconOnly="true" Icon="ellipsis">
                 <MenuItem Text="Archive" Icon="archive"/>
@@ -281,7 +285,7 @@
             <TagInput Name="tags" Bind="tags" Label="Topics" Placeholder="Add a topic"/>
             <Column Gap="8">
               <Label Text="Verification code"/>
-              <Otp Name="otp" Bind="otp" Length="6"/>
+              <Otp Name="otp" Bind="otp" Length="6" OnSubmitted="toast:code"/>
             </Column>
             <Column Gap="8">
               <Input Name="new-pw" Bind="password" Label="New password" Password="true"
@@ -396,7 +400,7 @@
             <Heading Level="4">Breadcrumb and pagination</Heading>
           </Column>
           <Card Gap="18" If="page == 4">
-            <Breadcrumb Items="Home|Projects|CUI|Settings"/>
+            <Breadcrumb Items="Home|Projects|CUI|Settings" OnClicked="toast:breadcrumb"/>
             <Pagination Name="pages" Bind="page_index" PageCount="12"/>
           </Card>
           <Column Gap="4" PadTop="18" If="page == 4">
@@ -418,7 +422,7 @@
           </Column>
           <Card If="page == 5">
             <Row Gap="8" Wrap="true">
-              <Button Text="Edit profile" Icon="pencil" OnClicked="dialog:profile"/>
+              <Button Name="profile-trigger" Text="Edit profile" Icon="pencil" OnClicked="dialog:profile"/>
               <Button Text="Open sheet" Icon="panel-left" OnClicked="sheet:notifications"/>
               <Button Text="Delete project" Variant="danger" Icon="trash-2" OnClicked="dialog:delete"/>
               <Button Text="Command palette" Variant="outline" Icon="command" Tooltip="Search everything"
@@ -445,7 +449,7 @@
               <Icon Icon="ellipsis" Size="18" Color="textMuted"/>
               <Text Color="textSecondary" Align="center">Right click this area</Text>
             </Card>
-            <ContextMenu Name="ctx">
+            <ContextMenu Name="ctx" Target="ctx-area">
               <MenuItem Text="Cut" Icon="scissors" Shortcut="Ctrl X"/>
               <MenuItem Text="Copy" Icon="copy" Shortcut="Ctrl C"/>
               <MenuItem Text="Paste" Icon="clipboard" Shortcut="Ctrl V"/>
@@ -561,7 +565,7 @@
               </Row>
               <Row Gap="10" Align="center">
                 <Button Text="Upload" Size="sm" Disabled="{upload == 1}" OnClicked="upload:start"/>
-                <StatusSpinner Name="upload" Status="{upload == 1 ? 'busy' : upload == 2 ? 'success' : upload == 3 ? 'error' : 'idle'}"
+                <StatusSpinner Name="upload-spinner" Status="{upload == 1 ? 'busy' : upload == 2 ? 'success' : upload == 3 ? 'error' : 'idle'}"
                                Size="18"/>
                 <Text Color="textSecondary">{upload == 1 ? 'Uploading' : upload == 2 ? 'Uploaded' : upload == 3 ? 'Upload failed' : ''}</Text>
               </Row>
@@ -606,7 +610,7 @@
             </Row>
           </Card>
           <Card Pad="0" If="page == 6">
-            <EmptyState Text="No projects yet" Icon="folder-open" Action="New project"
+            <EmptyState Text="No projects yet" Icon="folder-open" Action="New project" OnAction="toast:project"
                         Description="A project holds your screens, their builds and who can see them."/>
           </Card>
 
@@ -615,62 +619,62 @@
             <Heading Level="4">Table</Heading>
             <Secondary>Sortable columns, row selection and components in cells.</Secondary>
           </Column>
-          <Table Name="people" Selectable="true" SortColumn="0" If="page == 7">
+          <Table Name="people" Selectable="true" SortColumn="0" AutoSort="true" If="page == 7">
             <TableColumn Text="Name" Width="fill" Sortable="true"/>
             <TableColumn Text="Email" Width="1.2*"/>
             <TableColumn Text="Role" Width="110" Sortable="true"/>
             <TableColumn Text="Status" Width="120" Sortable="true"/>
             <TableColumn Text="Revenue" Width="110" Align="right"/>
-            <!-- the rows in the order examples/gallery_ui.c sorts them: by name -->
-            <TableRow Selected="{selected_row == 4}" OnClicked="row:4">
-              <Cell>
-                <Avatar Size="26">Aiko Tanaka</Avatar>
-                <Text Font="medium" Nowrap="true">Aiko Tanaka</Text>
-              </Cell>
-              <Cell><Text Color="textSecondary" Nowrap="true">aiko@tanaka.design</Text></Cell>
-              <Cell Text="Editor"/>
-              <Cell><Badge Text="Suspended" Tone="danger" Dot="true"/></Cell>
-              <Cell Text="$1,962"/>
-            </TableRow>
+            <!-- Keep the source order for ties, as in the C example. -->
             <TableRow Selected="{selected_row == 0}" OnClicked="row:0">
-              <Cell>
+              <Cell SortValue="Jonas Berg">
                 <Avatar Size="26">Jonas Berg</Avatar>
                 <Text Font="medium" Nowrap="true">Jonas Berg</Text>
               </Cell>
               <Cell><Text Color="textSecondary" Nowrap="true">jonas@northlight.io</Text></Cell>
               <Cell Text="Owner"/>
-              <Cell><Badge Text="Active" Tone="success" Dot="true"/></Cell>
+              <Cell SortValue="Active"><Badge Text="Active" Tone="success" Dot="true"/></Cell>
               <Cell Text="$12,384"/>
             </TableRow>
-            <TableRow Selected="{selected_row == 3}" OnClicked="row:3">
-              <Cell>
-                <Avatar Size="26">Lena Fischer</Avatar>
-                <Text Font="medium" Nowrap="true">Lena Fischer</Text>
-              </Cell>
-              <Cell><Text Color="textSecondary" Nowrap="true">lena@fischer.dev</Text></Cell>
-              <Cell Text="Viewer"/>
-              <Cell><Badge Text="Active" Tone="success" Dot="true"/></Cell>
-              <Cell Text="$3,127"/>
-            </TableRow>
             <TableRow Selected="{selected_row == 1}" OnClicked="row:1">
-              <Cell>
+              <Cell SortValue="Priya Nair">
                 <Avatar Size="26">Priya Nair</Avatar>
                 <Text Font="medium" Nowrap="true">Priya Nair</Text>
               </Cell>
               <Cell><Text Color="textSecondary" Nowrap="true">priya@harbor.dev</Text></Cell>
               <Cell Text="Admin"/>
-              <Cell><Badge Text="Active" Tone="success" Dot="true"/></Cell>
+              <Cell SortValue="Active"><Badge Text="Active" Tone="success" Dot="true"/></Cell>
               <Cell Text="$9,846"/>
             </TableRow>
             <TableRow Selected="{selected_row == 2}" OnClicked="row:2">
-              <Cell>
+              <Cell SortValue="Tomas Rivera">
                 <Avatar Size="26">Tomas Rivera</Avatar>
                 <Text Font="medium" Nowrap="true">Tomas Rivera</Text>
               </Cell>
               <Cell><Text Color="textSecondary" Nowrap="true">tomas@kiln.app</Text></Cell>
               <Cell Text="Editor"/>
-              <Cell><Badge Text="Invited" Tone="warning" Dot="true"/></Cell>
+              <Cell SortValue="Invited"><Badge Text="Invited" Tone="warning" Dot="true"/></Cell>
               <Cell Text="$7,215"/>
+            </TableRow>
+            <TableRow Selected="{selected_row == 3}" OnClicked="row:3">
+              <Cell SortValue="Lena Fischer">
+                <Avatar Size="26">Lena Fischer</Avatar>
+                <Text Font="medium" Nowrap="true">Lena Fischer</Text>
+              </Cell>
+              <Cell><Text Color="textSecondary" Nowrap="true">lena@fischer.dev</Text></Cell>
+              <Cell Text="Viewer"/>
+              <Cell SortValue="Active"><Badge Text="Active" Tone="success" Dot="true"/></Cell>
+              <Cell Text="$3,127"/>
+            </TableRow>
+            <TableRow Selected="{selected_row == 4}" OnClicked="row:4">
+              <Cell SortValue="Aiko Tanaka">
+                <Avatar Size="26">Aiko Tanaka</Avatar>
+                <Text Font="medium" Nowrap="true">Aiko Tanaka</Text>
+              </Cell>
+              <Cell><Text Color="textSecondary" Nowrap="true">aiko@tanaka.design</Text></Cell>
+              <Cell Text="Editor"/>
+              <Cell SortValue="Suspended"><Badge Text="Suspended" Tone="danger" Dot="true"/></Cell>
+              <Cell Text="$1,962"/>
             </TableRow>
           </Table>
           <Box Direction="grid" Columns="2" MinColumnWidth="260" Gap="16" If="page == 7">
@@ -855,8 +859,9 @@
             <Secondary>Confirm before destroying, and show the result of work in place.</Secondary>
           </Column>
           <Row Gap="12" Wrap="true" If="page == 9">
-            <ConfirmButton Text="Delete project" Icon="trash-2"/>
-            <StatusButton Text="Save changes" Status="idle" Icon="save" SuccessLabel="Saved"/>
+            <ConfirmButton Text="Delete project" Icon="trash-2" OnClicked="project:delete"/>
+            <StatusButton Text="Save changes" Status="{saveStatus}" Icon="save" SuccessLabel="Saved" OnClicked="save:start"/>
+            <Muted If="projectDeleted">Project deleted</Muted>
           </Row>
           <Column Gap="4" PadTop="18" If="page == 9">
             <Heading Level="4">Reactions</Heading>
@@ -868,8 +873,8 @@
             <Secondary>A compact switcher and a single toggle that morphs between sun and moon.</Secondary>
           </Column>
           <Row Gap="16" Wrap="true" If="page == 9">
-            <ThemeSwitcher Name="theme-switcher" System="true"/>
-            <ThemeToggle Name="theme-toggle"/>
+            <ThemeSwitcher Name="theme-switcher" System="true" Bind="mode" Mode="{mode}" OnChanged="theme.control"/>
+            <ThemeToggle Name="theme-toggle" OnChanged="theme.control"/>
           </Row>
           <Column Gap="4" PadTop="18" If="page == 9">
             <Heading Level="4">User menu</Heading>
@@ -889,17 +894,17 @@
             <Secondary>Drag a row sideways or swipe with two fingers.</Secondary>
           </Column>
           <Card Pad="6" Gap="6" If="page == 9">
-            <SwipeItem Name="swipe-1" Left="check:Done:success" Right="archive:Archive:info|trash-2:Delete:danger">
+            <SwipeItem Name="swipe-1" OnClicked="toast:swipe" Left="check:Done:success" Right="archive:Archive:info|trash-2:Delete:danger">
               <Icon Icon="circle" Size="16" Color="textMuted"/>
               <Text Width="fill" Nowrap="true">Review the design tokens</Text>
               <Text Size="12" Color="textMuted">Today</Text>
             </SwipeItem>
-            <SwipeItem Name="swipe-2" Left="check:Done:success" Right="archive:Archive:info|trash-2:Delete:danger">
+            <SwipeItem Name="swipe-2" OnClicked="toast:swipe" Left="check:Done:success" Right="archive:Archive:info|trash-2:Delete:danger">
               <Icon Icon="circle" Size="16" Color="textMuted"/>
               <Text Width="fill" Nowrap="true">Reply to Jonas about the release</Text>
               <Text Size="12" Color="textMuted">Today</Text>
             </SwipeItem>
-            <SwipeItem Name="swipe-3" Left="check:Done:success" Right="archive:Archive:info|trash-2:Delete:danger">
+            <SwipeItem Name="swipe-3" OnClicked="toast:swipe" Left="check:Done:success" Right="archive:Archive:info|trash-2:Delete:danger">
               <Icon Icon="circle" Size="16" Color="textMuted"/>
               <Text Width="fill" Nowrap="true">Book the offsite venue</Text>
               <Text Size="12" Color="textMuted">Today</Text>
@@ -1071,8 +1076,10 @@
           </Box>
 
           <!-- ============================ disclosure ========================= -->
-          <Banner Name="release" If="page == 13" Tone="neutral" Action="Read the notes" Dismissible="true">
+          <Banner Name="release" If="page == 13" Bind="releaseOpen" Tone="neutral" Action="Read the notes"
+                  OnAction="toast:release" Dismissible="true">
             CUI 1.1 is out: data grid, kanban and forty new components.</Banner>
+          <Button If="page == 13 &amp;&amp; !releaseOpen" Text="Show the banner again" Size="sm" OnClicked="show:release"/>
           <Column Gap="4" PadTop="18" If="page == 13">
             <Heading Level="4">Hover card</Heading>
             <Secondary>Rest the pointer on a name.</Secondary>
@@ -1103,7 +1110,8 @@
             <Button Text="Delete branch" Icon="trash-2" OnClicked="popover:confirm-delete"/>
             <ConfirmPopover Name="confirm-delete" Title="Delete feature/grid?"
                             Description="The branch and its 12 commits are removed from the remote."
-                            ConfirmLabel="Delete branch" Danger="true"/>
+                            ConfirmLabel="Delete branch" Danger="true" OnClicked="branch:delete"/>
+            <Muted If="branchDeleted">Branch deleted</Muted>
           </Row>
           <Column Gap="4" PadTop="18" If="page == 13">
             <Heading Level="4">Expandable text</Heading>
@@ -1149,7 +1157,7 @@
             <Secondary>Progress, with the next step open.</Secondary>
           </Column>
           <Box Width="460" If="page == 13">
-            <Checklist Name="onboarding" Title="Set up your workspace">
+            <Checklist Name="onboarding" Title="Set up your workspace" OnClicked="toast:onboarding">
               <Step Description="Pick a name and invite your team." Action="Create" Done="true">Create your workspace</Step>
               <Step Description="Link GitHub or GitLab to sync issues and pull requests." Action="Connect">Connect a repository</Step>
               <Step Description="Bring tasks over from a CSV or another tool." Action="Import">Import your data</Step>
@@ -1160,7 +1168,7 @@
             <Heading Level="4">Undo toast</Heading>
             <Secondary>A draining line shows how long Undo stays.</Secondary>
           </Column>
-          <Button If="page == 13" Text="Archive 3 conversations" Icon="archive"/>
+          <Button If="page == 13" Text="Archive 3 conversations" Icon="archive" OnClicked="toast:archive-conversations"/>
           <Column Gap="4" PadTop="18" If="page == 13">
             <Heading Level="4">Veil</Heading>
             <Secondary>Covers a picture, a secret or a spoiler with moving dots, and dissolves when clicked.</Secondary>
@@ -1173,11 +1181,11 @@
             <Row Gap="8" Align="center" Pad="8" PadX="10" Background="surfaceMuted" Radius="10" Width="fill">
               <Text Font="mono" Size="12.5" Color="textSecondary">sk-live-</Text>
               <Box Width="fill">
-                <Veil Name="key" Color="surface">
+                <Veil Name="key" Bind="keyRevealed" Color="surface">
                   <Text Font="mono" Size="12.5">4f9a82c1e07d55b3a9</Text>
                 </Veil>
               </Box>
-              <Button Text="Reveal" Size="sm"/>
+              <Button Text="{keyRevealed ? 'Hide' : 'Reveal'}" Size="sm" OnClicked="veil:key"/>
             </Row>
             <Row Gap="4" Wrap="true" Align="center">
               <Text>Finished it last night. The ending:</Text>
@@ -1327,7 +1335,7 @@ cmake --build build
           <DotDisplay If="page == 26" Pitch="3" Accent="{caffeineOver}">{caffeineDot}</DotDisplay>
 
           <!-- ============================== audio =========================== -->
-          <Button If="page == 22" Text="Take the tour" Icon="sparkles" Variant="outline"/>
+          <Button If="page == 22" Text="Take the tour" Icon="sparkles" Variant="outline" OnClicked="tour:start"/>
           <Row Gap="16" Wrap="true" Align="start" If="page == 22">
             <Card Gap="16" MinWidth="280">
               <Heading Level="4">Synth</Heading>
@@ -1356,7 +1364,7 @@ cmake --build build
                      Meter="{audioMeter6}"/>
             </Card>
           </Row>
-          <Tour Name="audio-tour" If="page == 22">
+          <Tour Name="audio-tour" Bind="audioTourStep" If="page == 22">
             <TourStep Target="cutoff" Placement="bottomstart"
                       Description="Drag up and down. Hold Shift for fine steps, double-click to reset.">Turn a knob</TourStep>
             <TourStep Target="master" Placement="topstart"
@@ -1782,8 +1790,8 @@ cmake --build build
           <Row Gap="24" Align="center" If="page == 17">
             <Presence Visible="5" Size="30"
                       Users="Maya Okafor:#7c5cff|Jonas Berg:#22c58b|Priya Nair:#f59e0b|Lena Fischer:#38bdf8:away|Aiko Tanaka:#ec4899|Daniel Mensah:#10b981|Rosa Delgado:#a855f7"/>
-            <Counter Value="48210" Format="$%.0f" Size="34" GroupThousands="true"/>
-            <Button Text="Add a sale" Size="sm" Icon="plus"/>
+            <Counter Value="{revenue}" Format="$%.0f" Size="34" GroupThousands="true"/>
+            <Button Text="Add a sale" Size="sm" Icon="plus" OnClicked="sale:add"/>
           </Row>
           <Column Gap="4" PadTop="18" If="page == 17">
             <Heading Level="4">Ticker</Heading>
@@ -1850,22 +1858,22 @@ cmake --build build
                 <Heading Level="4">Card stack</Heading>
                 <Secondary>Flick the top card away, left or right.</Secondary>
               </Column>
-              <CardStack Name="deck" Count="3" Width="260" Height="200">
+              <CardStack Name="deck" OnChanged="deck:swipe" Count="3" Width="260" Height="200">
                 <CardStackItem>
-                  <Box Width="fill" Height="fill" Background="#c8553d" Radius="25" Pad="20" Gap="4" Justify="end">
-                    <Text Font="display" Size="22" Color="#ffffff">Kyoto</Text>
+                  <Box Width="fill" Height="fill" Background="{deckColor0}" Radius="25" Pad="20" Gap="4" Justify="end">
+                    <Text Font="display" Size="22" Color="#ffffff">{deckCity0}</Text>
                     <Text Font="medium" Size="13" Color="#fffffff0">Swipe right to save</Text>
                   </Box>
                 </CardStackItem>
                 <CardStackItem>
-                  <Box Width="fill" Height="fill" Background="#2d3047" Radius="25" Pad="20" Gap="4" Justify="end">
-                    <Text Font="display" Size="22" Color="#ffffff">Lisbon</Text>
+                  <Box Width="fill" Height="fill" Background="{deckColor1}" Radius="25" Pad="20" Gap="4" Justify="end">
+                    <Text Font="display" Size="22" Color="#ffffff">{deckCity1}</Text>
                     <Text Font="medium" Size="13" Color="#fffffff0">Swipe right to save</Text>
                   </Box>
                 </CardStackItem>
                 <CardStackItem>
-                  <Box Width="fill" Height="fill" Background="#5b8e7d" Radius="25" Pad="20" Gap="4" Justify="end">
-                    <Text Font="display" Size="22" Color="#ffffff">Reykjavik</Text>
+                  <Box Width="fill" Height="fill" Background="{deckColor2}" Radius="25" Pad="20" Gap="4" Justify="end">
+                    <Text Font="display" Size="22" Color="#ffffff">{deckCity2}</Text>
                     <Text Font="medium" Size="13" Color="#fffffff0">Swipe right to save</Text>
                   </Box>
                 </CardStackItem>
@@ -1888,7 +1896,7 @@ cmake --build build
           </Column>
           <Card Pad="20" Width="fill" MaxWidth="620" If="page == 29">
             <VoiceSession Name="call" Levels="{voiceLevels}" Owners="{voiceOwners}" Transcript="{voiceTranscript}"
-                          Upcoming="{voiceUpcoming}" State="{voiceState}" Reply="{voiceReply}"/>
+                          Upcoming="{voiceUpcoming}" State="{voiceState}" Reply="{voiceReply}" OnChanged="voice:session"/>
           </Card>
           <Column Gap="4" PadTop="18" If="page == 29">
             <Heading Level="4">Voice waveform</Heading>
@@ -1904,7 +1912,7 @@ cmake --build build
             <Heading Level="4">Kanban</Heading>
             <Secondary>Drag cards within and between columns. Columns can carry a work-in-progress limit.</Secondary>
           </Column>
-          <Kanban Name="board" If="page == 18">
+          <Kanban Name="board" AutoMove="true" If="page == 18">
             <KanbanColumn Text="Backlog" Dot="#94a3b8" Width="264">
               <KanbanCard Card="1">
                 <Badge Tone="violet" Size="sm">Design</Badge>
@@ -2137,14 +2145,14 @@ cmake --build build
                 <Secondary>Ranked, keyed by label: press Shuffle and the rows slide to their new rank.</Secondary>
               </Column>
               <BarList Name="pages">
-                <Part Text="/docs" Value="4820"/>
-                <Part Text="/" Value="3920"/>
-                <Part Text="/gallery" Value="2410"/>
-                <Part Text="/blog/fast-ui-in-c" Value="1830"/>
-                <Part Text="/download" Value="1210"/>
-                <Part Text="/pricing" Value="640"/>
+                <Part Text="/docs" Value="{barValue0}"/>
+                <Part Text="/" Value="{barValue1}"/>
+                <Part Text="/gallery" Value="{barValue2}"/>
+                <Part Text="/blog/fast-ui-in-c" Value="{barValue3}"/>
+                <Part Text="/download" Value="{barValue4}"/>
+                <Part Text="/pricing" Value="{barValue5}"/>
               </BarList>
-              <Button Text="Shuffle" Size="sm" Icon="shuffle" Variant="outline"/>
+              <Button Text="Shuffle" Size="sm" Icon="shuffle" Variant="outline" OnClicked="bars:shuffle"/>
             </Column>
             <Column Fill="1" Gap="10" Align="center">
               <Column Gap="4" PadTop="18">
@@ -2191,14 +2199,14 @@ cmake --build build
               <Loader Style="dots" Size="22"/>
               <ShimmerText Size="15">Thinking about your question&#8230;</ShimmerText>
             </Row>
-            <Typewriter Name="tw" Caret="true" Size="15">CUI draws a full frame in a fraction of a millisecond, so text can stream in as fast as it arrives.</Typewriter>
-            <TextReveal Name="rv" Size="20" Font="display">The release build finished in 3 minutes 42 seconds.</TextReveal>
+            <Typewriter Name="tw" Replay="{replay}" Caret="true" Size="15">CUI draws a full frame in a fraction of a millisecond, so text can stream in as fast as it arrives.</Typewriter>
+            <TextReveal Name="rv" Replay="{replay}" Size="20" Font="display">The release build finished in 3 minutes 42 seconds.</TextReveal>
             <Row Gap="8" Align="center">
               <Text Font="display" Size="26">Deploying to</Text>
               <WordRotate Name="rot" Font="display" Size="26" Interval="2.2"
                           Words="staging.|eu-west.|us-east.|all regions."/>
             </Row>
-            <Button Text="Replay" Size="sm" Icon="rotate-ccw" Variant="outline"/>
+            <Button Text="Replay" Size="sm" Icon="rotate-ccw" Variant="outline" OnClicked="motion:replay"/>
           </Card>
           <Column Gap="4" PadTop="18" If="page == 20">
             <Heading Level="4">Gradient text and spotlight cards</Heading>
@@ -2309,13 +2317,14 @@ cmake --build build
             <StatusTag Status="expired">Expired</StatusTag>
           </Row>
           <Row Gap="6" Wrap="true" Align="center" If="page == 27">
-            <StatusTag Status="pending" Size="sm" Removable="true">Pending</StatusTag>
-            <StatusTag Status="inprogress" Size="sm" Removable="true">In progress</StatusTag>
-            <StatusTag Status="submitted" Size="sm" Removable="true">Submitted</StatusTag>
-            <StatusTag Status="inreview" Size="sm" Removable="true">In review</StatusTag>
-            <StatusTag Status="success" Size="sm" Removable="true">Success</StatusTag>
-            <StatusTag Status="failed" Size="sm" Removable="true">Failed</StatusTag>
-            <StatusTag Status="expired" Size="sm" Removable="true">Expired</StatusTag>
+            <StatusTag Name="tag-pending" Status="pending" Size="sm" Removable="true" OnClicked="hide:tag-pending">Pending</StatusTag>
+            <StatusTag Name="tag-inprogress" Status="inprogress" Size="sm" Removable="true" OnClicked="hide:tag-inprogress">In progress</StatusTag>
+            <StatusTag Name="tag-submitted" Status="submitted" Size="sm" Removable="true" OnClicked="hide:tag-submitted">Submitted</StatusTag>
+            <StatusTag Name="tag-inreview" Status="inreview" Size="sm" Removable="true" OnClicked="hide:tag-inreview">In review</StatusTag>
+            <StatusTag Name="tag-success" Status="success" Size="sm" Removable="true" OnClicked="hide:tag-success">Success</StatusTag>
+            <StatusTag Name="tag-failed" Status="failed" Size="sm" Removable="true" OnClicked="hide:tag-failed">Failed</StatusTag>
+            <StatusTag Name="tag-expired" Status="expired" Size="sm" Removable="true" OnClicked="hide:tag-expired">Expired</StatusTag>
+            <Button If="allTagsRemoved" Text="Bring them back" Size="sm" Variant="ghost" OnClicked="tags:restore"/>
           </Row>
           <Column Gap="4" PadTop="18" If="page == 27">
             <Heading Level="4">Ratio slider</Heading>
@@ -2367,7 +2376,7 @@ cmake --build build
                 <Secondary>Reasoning, tool calls, an answer with sources, and the composer.</Secondary>
               </Column>
               <ChatMessage Mine="true">Why do immediate mode toolkits feel so fast? Cite a few sources.</ChatMessage>
-              <Reasoning Name="think" Seconds="8">
+              <Reasoning Name="think" Thinking="{aiBusy}" Seconds="{aiBusy ? aiSeconds : 8}">
                 <Text Size="13.5" Color="textSecondary">The question is about perceived speed. Two parts: how little work a frame does, and how quickly input shows up on screen.</Text>
                 <Text Size="13.5" Color="textSecondary">Look for sources on retained versus immediate mode, text rendering cost and motion.</Text>
               </Reasoning>
@@ -2375,8 +2384,9 @@ cmake --build build
                         Seconds="1.4"
                         Input="{{&quot;query&quot;: &quot;immediate mode gui performance&quot;, &quot;limit&quot;: 5}"
                         Output="{{&quot;results&quot;: [{{&quot;title&quot;: &quot;Immediate mode GUIs&quot;, &quot;url&quot;: &quot;https://fieldnotes.dev/immediate-mode&quot;}}], &quot;took_ms&quot;: 1380}"/>
-              <ToolCall Name="read" Text="read_file" Icon="file-text" Detail="quarterly-report.pdf" Status="done"
-                        Seconds="2.1"/>
+              <ToolCall Name="read" Text="read_file" Icon="file-text" Detail="quarterly-report.pdf"
+                        Status="{aiBusy ? 'running' : 'done'}" Seconds="{aiBusy ? aiSeconds : 2.1}"/>
+              <AgentStatus If="aiBusy" Status="running" Seconds="{aiSeconds}">Reading quarterly-report.pdf</AgentStatus>
               <Typewriter Name="answer" Size="15">They do very little work per frame: the interface is rebuilt from your data, laid out once and drawn in a handful of batches, so there is no tree of objects to keep in sync. Text is the expensive part, which is why glyphs are cached in an atlas, and motion feels quick when it is driven by springs instead of fixed curves.</Typewriter>
               <Row Gap="6" Align="center">
                 <Text Size="12" Color="textMuted">Sources</Text>
@@ -2394,7 +2404,7 @@ cmake --build build
                         Snippet="Why spring physics feel more natural than cubic beziers for interface motion."/>
               </SourceList>
               <Row Gap="8" Align="center" Width="fill">
-                <ResponseActions Name="actions" CopyText="They do very little work per frame."/>
+                <ResponseActions Name="actions" OnClicked="ai:response" CopyText="They do very little work per frame."/>
                 <Spacer/>
                 <ContextMeter Name="ctx" Used="113400" Limit="200000">
                   <Part Name="System" Value="3200"/>
@@ -2402,8 +2412,8 @@ cmake --build build
                   <Part Name="Messages" Value="68400"/>
                 </ContextMeter>
               </Row>
-              <ChatComposer Name="composer" Placeholder="Ask a follow up" MaxLength="512"
-                            Attachments="quarterly-report.pdf|metrics.csv"
+              <ChatComposer Name="ai-composer" Placeholder="Ask a follow up" MaxLength="512" Busy="{aiBusy}"
+                            Attachments="{aiAttachments}" OnChanged="ai:compose" OnRemoved="ai:remove"
                             Models="Atlas:Longer answers, reads files and code:New:layers|Atlas Fast:Short answers in about a second::zap|Atlas Mini:Runs on your own machine::box"
                             Model="0"/>
             </Column>
@@ -2414,9 +2424,9 @@ cmake --build build
               </Column>
               <AgentPlan Name="plan" Title="Research plan">
                 <PlanStep Detail="3 results" Status="done">Search for sources</PlanStep>
-                <PlanStep Detail="40 pages" Status="done">Read the attached report</PlanStep>
-                <PlanStep Status="done">Compare the numbers with last quarter</PlanStep>
-                <PlanStep Status="running">Draft the summary</PlanStep>
+                <PlanStep Detail="{aiBusy ? 'Page 12 of 40' : '40 pages'}" Status="{aiBusy ? 'running' : 'done'}">Read the attached report</PlanStep>
+                <PlanStep Status="{aiBusy ? 'pending' : 'done'}">Compare the numbers with last quarter</PlanStep>
+                <PlanStep Status="{aiBusy ? 'pending' : 'running'}">Draft the summary</PlanStep>
                 <PlanStep Status="pending">Check the citations</PlanStep>
               </AgentPlan>
               <Column Gap="4" PadTop="18">

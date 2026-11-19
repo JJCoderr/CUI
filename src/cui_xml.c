@@ -2476,11 +2476,6 @@ static void cui__xml_frame_begin(cui_xml *doc, cui_ctx *ui) {
         free(doc->pending_copy);
         doc->pending_copy = NULL;
     }
-    if (doc->pending_popover) {
-        cui_popover_toggle(ui, doc->pending_popover);
-        free(doc->pending_popover);
-        doc->pending_popover = NULL;
-    }
 }
 
 void cui_xml_render(cui_xml *doc, cui_ctx *ui) {
@@ -2774,7 +2769,7 @@ bool cui_xml_is_builtin(const char *action) {
     if (cui__xml_starts_ci(action, "show:") || cui__xml_starts_ci(action, "hide:") ||
         cui__xml_starts_ci(action, "toggle:") || cui__xml_starts_ci(action, "enable:") ||
         cui__xml_starts_ci(action, "disable:") || cui__xml_starts_ci(action, "page:") ||
-        cui__xml_starts_ci(action, "copy:"))
+        cui__xml_starts_ci(action, "copy:") || cui__xml_starts_ci(action, "popover:"))
         return true;
     return false;
 }

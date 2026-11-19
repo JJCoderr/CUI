@@ -41,10 +41,8 @@ typedef struct {
 /* The frame the app draws, as cui_app_run calls it. */
 static void gallery_xml_frame(cui_ctx *ui, void *user) {
     gallery_xml_view *v = user;
-    gallery_xml_values(v->doc, v->g);
-    gallery_xml_apply_theme(ui, v->g);
     cui_xml_poll(v->doc);
-    cui_xml_render(v->doc, ui);
+    gallery_xml_render(v->doc, ui, v->g);
     if (cui_xml_quit_requested(v->doc)) cui_app_quit(NULL);
 }
 
@@ -77,9 +75,8 @@ static int write_shot(cui_xml *doc, gallery *g, const char *out_path, bool dark,
     cui_set_viewport(ui, (float)width, (float)height, 2);
     cui_input_mouse_leave(ui);
     for (i = 0; i < frames; i++) {
-        gallery_xml_values(doc, g);
         cui_begin_frame(ui, 1.0f / 60.0f);
-        cui_xml_render(doc, ui);
+        gallery_xml_render(doc, ui, g);
         cui_end_frame(ui);
     }
     draw = cui_get_draw_data(ui);

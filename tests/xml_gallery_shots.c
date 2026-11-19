@@ -84,6 +84,54 @@ static void canvas_close(canvas *c) {
     cui_sw_destroy(c->sw);
 }
 
+static void gallery_frames(canvas *c, cui_xml *doc, gallery *g, int count) {
+    for (int f = 0; f < count; f++) {
+        cui_begin_frame(c->ui, 1.0f / 60.0f);
+        gallery_xml_render(doc, c->ui, g);
+        cui_end_frame(c->ui);
+    }
+}
+
+static bool gallery_click(canvas *c, cui_xml *doc, gallery *g, const char *name) {
+    const cui_xml_node *node = cui_xml_find(doc, name);
+    cui_rect r = cui_get_rect(c->ui, cui_xml_node_id(node));
+    if (r.w <= 0 || r.h <= 0) return false;
+    cui_input_mouse_move(c->ui, r.x + r.w * 0.5f, r.y + r.h * 0.5f);
+    gallery_frames(c, doc, g, 1);
+    cui_input_mouse_button(c->ui, CUI_MOUSE_LEFT, true);
+    gallery_frames(c, doc, g, 1);
+    cui_input_mouse_button(c->ui, CUI_MOUSE_LEFT, false);
+    gallery_frames(c, doc, g, 2);
+    return true;
+}
+
+static bool test_gallery_actions(void) {
+    canvas c;
+    gallery g;
+    bool profile, drawer;
+    cui_xml *doc;
+    if (!canvas_open(&c, false, 0, 1240, 1000)) return false;
+    gallery_init(&g);
+    g.page = PAGE_OVERLAYS;
+    doc = gallery_xml_open(CUI_GALLERY_XML_PATH, &g);
+    if (!doc) {
+        canvas_close(&c);
+        return false;
+    }
+    gallery_frames(&c, doc, &g, 3);
+    profile = gallery_click(&c, doc, &g, "profile-trigger") && g.dialog_open;
+    g.dialog_open = false;
+    cui_set_viewport(c.ui, 700, 900, 2);
+    gallery_frames(&c, doc, &g, 30);
+    drawer = gallery_click(&c, doc, &g, "components-menu") && g.drawer;
+    cui_xml_free(doc);
+    canvas_close(&c);
+    if (!profile || !drawer)
+        fprintf(stderr, "Gallery actions: edit profile %s, narrow drawer %s\n",
+                profile ? "passed" : "failed", drawer ? "passed" : "failed");
+    return profile && drawer;
+}
+
 /* Runs the frame loop and hands back the picture, RGBA, malloc'd. */
 static unsigned char *canvas_pixels(canvas *c, int *width, int *height) {
     const cui_draw_data *dd = cui_get_draw_data(c->ui);
@@ -126,7 +174,6 @@ static unsigned char *draw_xml(const char *path, int page, bool dark, int accent
     canvas c;
     static gallery bound;
     cui_xml *doc;
-    int f;
     if (!canvas_open(&c, dark, accent, width, height)) return NULL;
     gallery_init(&bound);
     doc = gallery_xml_open(path, &bound);
@@ -145,12 +192,7 @@ static unsigned char *draw_xml(const char *path, int page, bool dark, int accent
     bound.page = page;
     bound.dark = dark;
     bound.accent = accent;
-    for (f = 0; f < 90; f++) {
-        gallery_xml_values(doc, &bound);
-        cui_begin_frame(c.ui, 1.0f / 60.0f);
-        cui_xml_render(doc, c.ui);
-        cui_end_frame(c.ui);
-    }
+    gallery_frames(&c, doc, &bound, 90);
     {
         unsigned char *pixels = canvas_pixels(&c, w, h);
         canvas_close(&c);
@@ -267,6 +309,7 @@ int main(int argc, char **argv) {
     }
     /* the accent variants the screenshot tool draws as well */
     if (only < 0) {
+        if (!test_gallery_actions()) fails++;
         snprintf(slug, sizeof slug, "overview-green");
         fails += compare(CUI_GALLERY_XML_PATH, dir, slug, PAGE_OVERVIEW, true, CUI_ACCENT_GREEN, 1240.0f, 1000.0f) ? 1 : 0;
         snprintf(slug, sizeof slug, "selection-blue");

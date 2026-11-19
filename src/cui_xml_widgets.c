@@ -259,6 +259,8 @@ static const cui__xml_attr_row cui__xml_attr_rows[] = {
     { "Table", "Striped", CUI_XML_BOOL, NULL, "Alternate row colors." },
     { "Table", "Compact", CUI_XML_BOOL, NULL, "Rows 36 points tall instead of 44." },
     { "Table", "Selectable", CUI_XML_BOOL, NULL, "Rows take the keyboard and the hand cursor." },
+    { "Table", "AutoSort", CUI_XML_BOOL, NULL, "Sort rows when a sortable header is clicked." },
+    { "Cell", "SortValue", CUI_XML_TEXT, NULL, "Sort key for a cell with custom content." },
     { "TableColumn", "Title", CUI_XML_TEXT, NULL, "Header text." },
     { "TableColumn", "Sortable", CUI_XML_BOOL, NULL, "Clicking the header sorts." },
     { "TableColumn", "Align", CUI_XML_CHOICE, "start|center|right|left|end", "Alignment of the cells." },
@@ -545,6 +547,10 @@ static const cui__xml_attr_row cui__xml_attr_rows[] = {
     { "AgentStatus", "Status", CUI_XML_CHOICE, "pending|running|done|failed|skipped", "State of the work." },
     { "AgentStatus", "Seconds", CUI_XML_NUMBER, NULL, "Elapsed time after the text." },
     { "Typewriter", "Size", CUI_XML_NUMBER, NULL, "Font size in points." },
+    { "Typewriter", "Replay", CUI_XML_NUMBER, NULL, "Change the number to restart the animation." },
+    { "TextReveal", "Replay", CUI_XML_NUMBER, NULL, "Change the number to restart the animation." },
+    { "Kanban", "AutoMove", CUI_XML_BOOL, NULL, "Keep cards where they were dropped." },
+    { "ContextMenu", "Target", CUI_XML_TEXT, NULL, "Name of the element that opens the menu." },
     { "Citation", "Number", CUI_XML_NUMBER, NULL, "The number shown in the pill." },
     { "Citation", "From", CUI_XML_TEXT, NULL, "Name of the SourceList it points into." },
     { "Citation", "Index", CUI_XML_NUMBER, NULL, "Which entry of that list, 0 based." },
@@ -987,6 +993,7 @@ static void cui__xml_draw_card(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool 
     c.align = cui__xml_align_of(doc, n, CUI_ALIGN_DEFAULT);
     c.wrap = cui__xml_attr_bool(doc, n, "wrap", false);
     c.hoverable = cui__xml_attr_bool(doc, n, "hoverable", false);
+    if (c.hoverable) c.id = n->key;
     c.muted = cui__xml_attr_bool(doc, n, "muted", false);
     c.selected = cui__xml_attr_bool(doc, n, "selected", false);
     cui__xml_record_self(n, ui);
@@ -1385,8 +1392,7 @@ static void cui__xml_draw_countdown(cui_xml *doc, cui_xml_node *n, cui_ctx *ui) 
     cui_countdown_ex(ui, n->key, st->target - cui_time(ui), &o);
 }
 
-/* A step keeps its box in the element: the checklist reports the step that was
- * clicked, and the document marks it done, as the C examples do. */
+/* Keep the completion state on the step, including toggles made by the widget. */
 typedef struct { bool init; } cui__xml_step_state;
 
 static void cui__xml_draw_checklist(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool disabled) {
@@ -1394,6 +1400,7 @@ static void cui__xml_draw_checklist(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, 
     cui_check_step steps[16];
     cui_xml_node *kids[16];
     int count = 0, i, acted;
+    bool changed = false;
     memset(&o, 0, sizeof o);
     o.title = cui__xml_attr_text(doc, n, "title", NULL);
     o.description = cui__xml_attr_text(doc, n, "description", NULL);
@@ -1424,11 +1431,19 @@ static void cui__xml_draw_checklist(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, 
     if (disabled) cui_push_disabled(ui, true);
     acted = cui_checklist_ex(ui, n->key, steps, count, &o);
     if (disabled) cui_pop_disabled(ui);
+    if (acted >= 0 && acted < count) steps[acted].done = true;
+    for (i = 0; i < count; i++) {
+        bool *done = cui__xml_slot_bool(doc, kids[i]);
+        if (*done != steps[i].done) {
+            *done = steps[i].done;
+            changed = true;
+        }
+    }
     if (acted >= 0 && acted < count) {
-        *cui__xml_slot_bool(doc, kids[acted]) = true;
         n->reported = acted;
         cui__xml_fire(doc, n, "onclicked");
     }
+    if (changed) cui__xml_changed_hook(doc, n);
 }
 
 static void cui__xml_draw_veil(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool disabled) {
@@ -1957,6 +1972,7 @@ static void cui__xml_draw_agent_status(cui_xml *doc, cui_xml_node *n, cui_ctx *u
 
 static void cui__xml_draw_typewriter(cui_xml *doc, cui_xml_node *n, cui_ctx *ui) {
     cui_text_fx_opts o;
+    int replay = (int)cui__xml_attr_num(doc, n, "replay", 0);
     memset(&o, 0, sizeof o);
     o.size = cui__xml_attr_num(doc, n, "size", 0);
     o.font = cui__xml_font_of(doc, n, CUI_FONT_BODY);
@@ -1964,7 +1980,9 @@ static void cui__xml_draw_typewriter(cui_xml *doc, cui_xml_node *n, cui_ctx *ui)
     o.delay = cui__xml_attr_num(doc, n, "delay", 0);
     o.caret = cui__xml_attr_bool(doc, n, "caret", false);
     o.nowrap = cui__xml_attr_bool(doc, n, "nowrap", false);
+    if (replay) cui_push_id_int(ui, replay);
     cui_typewriter_ex(ui, n->key, cui__xml_label(doc, n), &o);
+    if (replay) cui_pop_id(ui);
 }
 
 /* The sources an answer used: a card each, and the citations that point into
@@ -2072,13 +2090,14 @@ static void cui__xml_draw_chat_composer(cui_xml *doc, cui_xml_node *n, cui_ctx *
     int *model = cui__xml_slot_int(doc, n);
     size_t cap = 0;
     char *buf = cui__xml_slot_text(doc, n, &cap, (size_t)cui__xml_attr_num(doc, n, "maxlength", 512));
-    int events;
+    int events, removed = -1;
     if (!models || !attachments || !buf || !cap) return;
     memset(&o, 0, sizeof o);
     o.placeholder = cui__xml_attr_text(doc, n, "placeholder", NULL);
     o.busy = cui__xml_attr_bool(doc, n, "busy", false);
     o.attachment_count = cui__xml_split(ui, cui__xml_attr_text(doc, n, "attachments", NULL), '|', attachments, 8);
     o.attachments = (const char *const *)attachments;
+    o.removed = &removed;
     o.model_count = cui__xml_models_of(ui, cui__xml_attr_text(doc, n, "models", NULL), models, 8);
     o.models = o.model_count ? models : NULL;
     o.model = o.model_count ? model : NULL;
@@ -2099,6 +2118,10 @@ static void cui__xml_draw_chat_composer(cui_xml *doc, cui_xml_node *n, cui_ctx *
     events = cui_chat_composer_ex(ui, n->key, buf, cap, &o);
     if (disabled) cui_pop_disabled(ui);
     if (events) {
+        if ((events & CUI_COMPOSER_REMOVE) && removed >= 0) {
+            n->reported = removed;
+            cui__xml_fire(doc, n, "onremoved");
+        }
         n->reported = events;
         cui__xml_fire(doc, n, "onchanged");
     }
@@ -2365,8 +2388,11 @@ static void cui__xml_draw_shimmer_text(cui_xml *doc, cui_xml_node *n, cui_ctx *u
 
 static void cui__xml_draw_text_reveal(cui_xml *doc, cui_xml_node *n, cui_ctx *ui) {
     cui_text_fx_opts o;
+    int replay = (int)cui__xml_attr_num(doc, n, "replay", 0);
     cui__xml_text_fx_opts(doc, n, &o);
+    if (replay) cui_push_id_int(ui, replay);
     cui_text_reveal_ex(ui, n->key, cui__xml_label(doc, n), &o);
+    if (replay) cui_pop_id(ui);
 }
 
 static void cui__xml_draw_word_rotate(cui_xml *doc, cui_xml_node *n, cui_ctx *ui) {
@@ -2885,38 +2911,105 @@ static void cui__xml_draw_sankey(cui_xml *doc, cui_xml_node *n, cui_ctx *ui) {
 
 /* ---- planning: a kanban board, a week, a gantt and a month --------------- */
 
+typedef struct {
+    cui_xml_node *node;
+    cui_xml_node *column;
+} cui__xml_kanban_card;
+
+typedef struct {
+    int count;
+    cui__xml_kanban_card cards[];
+} cui__xml_kanban_board;
+
+static cui__xml_kanban_board *cui__xml_kanban_cards(cui_xml_node *n) {
+    int count = 0;
+    for (int i = 0; i < n->kid_count; i++) {
+        cui_xml_node *column = n->kids[i];
+        if (column->tag_id != CUI__XML_TAG_KANBANCOLUMN) continue;
+        count += column->kid_count;
+    }
+    cui__xml_kanban_board *board = cui__xml_alloc(sizeof *board + (size_t)count * sizeof board->cards[0]);
+    if (!board) return NULL;
+    board->count = 0;
+    for (int i = 0; i < n->kid_count; i++) {
+        cui_xml_node *column = n->kids[i];
+        if (column->tag_id != CUI__XML_TAG_KANBANCOLUMN) continue;
+        for (int k = 0; k < column->kid_count; k++) {
+            cui_xml_node *card = column->kids[k];
+            board->cards[board->count++] = (cui__xml_kanban_card){ card, column };
+        }
+    }
+    return board;
+}
+
+static void cui__xml_kanban_move(cui_xml *doc, cui__xml_kanban_board *board, const cui_kanban_move *move,
+                                  cui_xml_node *from_column, cui_xml_node *to_column) {
+    int from = -1, to = board->count, seen = 0;
+    for (int i = 0; i < board->count; i++) {
+        cui__xml_kanban_card *entry = &board->cards[i];
+        if (entry->node->tag_id != CUI__XML_TAG_KANBANCARD || !entry->node->shown) continue;
+        if (entry->column == from_column && (int)cui__xml_attr_num(doc, entry->node, "card", 0) == move->card) {
+            from = i;
+            continue;
+        }
+        if (entry->column == to_column && seen <= move->to_index) {
+            to = seen == move->to_index ? i : i + 1;
+            seen++;
+        }
+    }
+    if (from < 0) return;
+    cui__xml_kanban_card card = { board->cards[from].node, to_column };
+    if (to > from) to--;
+    if (to > from) memmove(&board->cards[from], &board->cards[from + 1], (size_t)(to - from) * sizeof card);
+    if (to < from) memmove(&board->cards[to + 1], &board->cards[to], (size_t)(from - to) * sizeof card);
+    board->cards[to] = card;
+}
+
 static void cui__xml_draw_kanban(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool disabled) {
     cui_kanban_move move;
-    int i, k;
+    cui__xml_kanban_board *board = n->cache;
+    cui_xml_node **columns = cui__frame_alloc(ui, (size_t)n->kid_count * sizeof *columns);
+    int count = 0;
+    if (!columns) return;
+    if (!board) {
+        board = cui__xml_kanban_cards(n);
+        if (!board) return;
+        n->cache = board;
+        n->cache_free = cui__xml_free_cache;
+    }
     if (disabled) cui_push_disabled(ui, true);
     cui_kanban_begin(ui, n->key);
-    for (i = 0; i < n->kid_count; i++) {
+    for (int i = 0; i < n->kid_count; i++) {
         cui_xml_node *column = n->kids[i];
+        cui_kanban_column_opts o;
         int cards = 0;
-        if (column->comment || column->tag_id != CUI__XML_TAG_KANBANCOLUMN || !column->shown) {
+        if (column->tag_id != CUI__XML_TAG_KANBANCOLUMN || !column->shown) {
             cui__xml_draw(doc, column, ui, disabled);
             continue;
         }
-        for (k = 0; k < column->kid_count; k++)
-            if (column->kids[k]->tag_id == CUI__XML_TAG_KANBANCARD && column->kids[k]->shown) cards++;
-        {
-            cui_kanban_column_opts o;
-            memset(&o, 0, sizeof o);
-            o.dot = cui__xml_attr_color(doc, column, "dot", (cui_color){ 0, 0, 0, 0 });
-            o.limit = (int)cui__xml_attr_num(doc, column, "limit", 0);
-            o.width = cui__xml_attr_num(doc, column, "width", 0);
-            if (cui_kanban_column_begin_ex(ui, cui__xml_label(doc, column), cards, &o)) {
-                column->reported = 0;
-                cui__xml_fire(doc, column, "onclicked");
-            }
+        columns[count++] = column;
+        for (int k = 0; k < board->count; k++)
+            if (board->cards[k].column == column && board->cards[k].node->shown &&
+                board->cards[k].node->tag_id == CUI__XML_TAG_KANBANCARD) cards++;
+        memset(&o, 0, sizeof o);
+        o.dot = cui__xml_attr_color(doc, column, "dot", (cui_color){ 0, 0, 0, 0 });
+        o.limit = (int)cui__xml_attr_num(doc, column, "limit", 0);
+        o.width = cui__xml_attr_num(doc, column, "width", 0);
+        if (cui_kanban_column_begin_ex(ui, cui__xml_label(doc, column), cards, &o)) {
+            column->reported = 0;
+            cui__xml_fire(doc, column, "onclicked");
         }
-        for (k = 0; k < column->kid_count; k++) {
-            cui_xml_node *card = column->kids[k];
-            if (card->comment || card->tag_id != CUI__XML_TAG_KANBANCARD || !card->shown) {
+        for (int k = 0; k < board->count; k++) {
+            cui_xml_node *card = board->cards[k].node;
+            bool clicked;
+            if (board->cards[k].column != column) continue;
+            if (card->tag_id != CUI__XML_TAG_KANBANCARD || !card->shown) {
                 cui__xml_draw(doc, card, ui, disabled);
                 continue;
             }
-            if (cui_kanban_card_begin(ui, (int)cui__xml_attr_num(doc, card, "card", 0))) {
+            clicked = cui_kanban_card_begin(ui, (int)cui__xml_attr_num(doc, card, "card", 0));
+            cui__xml_record_id(card, ui, cui_last_id(ui));
+            if (clicked) {
                 card->reported = 0;
                 cui__xml_fire(doc, card, "onclicked");
             }
@@ -2926,6 +3019,9 @@ static void cui__xml_draw_kanban(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, boo
         cui_kanban_column_end(ui);
     }
     if (cui_kanban_end(ui, &move)) {
+        if (cui__xml_attr_bool(doc, n, "automove", false) &&
+            move.from_column >= 0 && move.from_column < count && move.to_column >= 0 && move.to_column < count)
+            cui__xml_kanban_move(doc, board, &move, columns[move.from_column], columns[move.to_column]);
         n->reported = move.card;
         cui__xml_fire(doc, n, "onchanged");
     }
@@ -4702,6 +4798,20 @@ static void cui__xml_draw_list_item(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, 
 
 /* ---- table ---- */
 
+static const char *cui__xml_table_sort_value(cui_xml *doc, cui_xml_node *row, int column) {
+    for (int i = 0; i < row->kid_count; i++) {
+        cui_xml_node *cell = row->kids[i];
+        if (cell->tag_id == CUI__XML_TAG_CELL && column-- == 0)
+            return cui__xml_attr_text(doc, cell, "sortvalue", cui__xml_label(doc, cell));
+    }
+    return "";
+}
+
+typedef struct {
+    int index;
+    const char *value;
+} cui__xml_table_sort_row;
+
 static void cui__xml_draw_table(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool disabled) {
     cui_table_column *cols;
     int col_count = 0, i;
@@ -4758,12 +4868,30 @@ static void cui__xml_draw_table(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool
     cui__xml_record_self(n, ui);
     open = cui_table_begin_ex(ui, n->key, cols, col_count, &o);
     if (open) {
+        cui__xml_table_sort_row *order = NULL;
+        if (o.sort && cui__xml_attr_bool(doc, n, "autosort", false))
+            order = cui__frame_alloc(ui, (size_t)n->kid_count * sizeof *order);
+        if (order) {
+            for (i = 0; i < n->kid_count; i++) {
+                const char *value = cui__xml_table_sort_value(doc, n->kids[i], o.sort->column);
+                char *key = value ? cui__frame_strdup(ui, value, -1) : NULL;
+                int j = i;
+                while (j > 0) {
+                    int cmp = strcmp(order[j - 1].value, key ? key : "");
+                    if (o.sort->descending ? cmp >= 0 : cmp <= 0) break;
+                    order[j] = order[j - 1];
+                    j--;
+                }
+                order[j] = (cui__xml_table_sort_row){ i, key ? key : "" };
+            }
+        }
         for (i = 0; i < n->kid_count; i++) {
-            cui_xml_node *row = n->kids[i];
+            int row_index = order ? order[i].index : i;
+            cui_xml_node *row = n->kids[row_index];
             int c;
             if (row->tag_id != CUI__XML_TAG_TABLEROW || !row->shown) continue;
             if (cui_table_row(ui, cui__xml_attr_bool(doc, row, "selected", false))) {
-                n->reported = i;
+                n->reported = row_index;
                 cui__xml_fire(doc, row, "onclicked");
             }
             for (c = 0; c < row->kid_count; c++) {
@@ -5467,23 +5595,33 @@ static void cui__xml_draw_avatar_group(cui_xml *doc, cui_xml_node *n, cui_ctx *u
 /* Panels over the interface                                                */
 /* ------------------------------------------------------------------------ */
 
-static void cui__xml_draw_popover(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool disabled) {
+static bool cui__xml_draw_popover(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool disabled) {
     cui_popover_opts o;
+    cui_id id = cui_make_id(ui, n->key);
+    bool open;
     memset(&o, 0, sizeof o);
     o.placement = cui__xml_placement_of(doc, n, CUI_PLACE_BOTTOM_START);
     o.width = cui__xml_attr_num(doc, n, "width", 0);
     o.pad = cui__xml_attr_num(doc, n, "pad", 0);
     o.gap = cui__xml_attr_num(doc, n, "gap", 0);
     if (disabled) cui_push_disabled(ui, true);
-    if (cui_popover_begin(ui, n->key, &o)) {
-        cui__xml_record_self(n, ui);
+    open = cui_popover_begin(ui, n->key, &o);
+    if (open) {
+        cui__xml_record_id(n, ui, id);
         cui__xml_draw_kids(doc, n, ui, disabled);
         cui_popover_end(ui);
     }
     if (disabled) cui_pop_disabled(ui);
+    return open;
 }
 
 static void cui__xml_draw_context_menu(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool disabled) {
+    const char *target = cui__xml_attr_text(doc, n, "target", NULL);
+    if (target) {
+        cui_id id = cui_xml_node_id(cui_xml_find(doc, target));
+        if (!id) return;
+        ui->last_id = id;
+    }
     if (disabled) cui_push_disabled(ui, true);
     if (cui_context_menu_begin(ui, n->key)) {
         cui__xml_record_self(n, ui);
@@ -6309,8 +6447,7 @@ static bool cui__xml_draw_impl(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool 
         cui__xml_draw_avatar_group(doc, n, ui);
         return true;
     case CUI__XML_TAG_POPOVER:
-        cui__xml_draw_popover(doc, n, ui, disabled);
-        return true;
+        return cui__xml_draw_popover(doc, n, ui, disabled);
     case CUI__XML_TAG_CONTEXTMENU:
         cui__xml_draw_context_menu(doc, n, ui, disabled);
         return true;
@@ -6825,6 +6962,12 @@ bool cui__xml_draw(cui_xml *doc, cui_xml_node *n, cui_ctx *ui, bool disabled) {
      * The label still tells the items apart; the list's scope tells the lists apart. */
     scoped = n->tag_id != CUI__XML_TAG_NAVITEM;
     if (scoped) cui_push_id(ui, n->key ? n->key : "cui_xml");
+    if (doc->pending_popover && (n->tag_id == CUI__XML_TAG_POPOVER || n->tag_id == CUI__XML_TAG_CONFIRMPOPOVER) &&
+        n == cui_xml_find(doc, doc->pending_popover)) {
+        cui_popover_toggle(ui, n->key);
+        free(doc->pending_popover);
+        doc->pending_popover = NULL;
+    }
     cui_push_disabled(ui, dis);
     drew = cui__xml_draw_impl(doc, n, ui, dis);
     n->seen = true;

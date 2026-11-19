@@ -758,7 +758,7 @@ static void page_charts(cui_ctx *ui, gallery *g) {
     }
 }
 
-static void dialogs(cui_ctx *ui, gallery *g) {
+void gallery_dialogs(cui_ctx *ui, gallery *g) {
     cui_dialog(ui, "Edit profile", &g->dialog_open, .description = "Changes are visible to your team.", .draggable = true, .resizable = true) {
         cui_input(ui, "dlg-name", g->name, sizeof g->name, .label = "Name");
         cui_input(ui, "dlg-email", g->email, sizeof g->email, .label = "Email", .icon = CUI_ICON_MAIL);
@@ -815,11 +815,19 @@ static void dialogs(cui_ctx *ui, gallery *g) {
     }
 }
 
-void gallery_frame(cui_ctx *ui, gallery *g) {
+void gallery_shortcuts(cui_ctx *ui, gallery *g) {
     if (!cui_wants_keyboard(ui)) {
         if (cui_shortcut(ui, CUI_MOD_PRIMARY, CUI_KEY_K)) g->palette_open = !g->palette_open;
         if (cui_shortcut(ui, CUI_MOD_PRIMARY, CUI_KEY_J)) { g->dark = !g->dark; cui_set_theme(ui, g->dark ? CUI_THEME_DARK : CUI_THEME_LIGHT); }
     }
+}
+
+void gallery_drawer(cui_ctx *ui, gallery *g) {
+    cui_sheet(ui, "CUI", &g->drawer, .side = CUI_SIDE_LEFT, .size = 280) { sidebar(ui, g, true); }
+}
+
+void gallery_frame(cui_ctx *ui, gallery *g) {
+    gallery_shortcuts(ui, g);
     /* below 760 points the page list moves into a drawer behind a menu button */
     bool narrow = cui_viewport_size(ui).x < 760;
     if (!narrow) g->drawer = false;
@@ -853,6 +861,6 @@ void gallery_frame(cui_ctx *ui, gallery *g) {
             }
         }
     }
-    cui_sheet(ui, "CUI", &g->drawer, .side = CUI_SIDE_LEFT, .size = 280) { sidebar(ui, g, true); }
-    dialogs(ui, g);
+    gallery_drawer(ui, g);
+    gallery_dialogs(ui, g);
 }
